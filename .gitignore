@@ -1,0 +1,18 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Rust build output
+/backend/target/
+
+# Node.js dependencies and build output
+/frontend/node_modules/
+/frontend/dist/
+/frontend/dist-ssr/
+
+# Local logs and editor files
+*.log
+.vscode/
+.idea/
+.DS_Store
