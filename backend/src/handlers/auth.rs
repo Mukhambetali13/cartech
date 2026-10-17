@@ -24,24 +24,24 @@ pub async fn register(
     // Validate role
     let role = req.role.unwrap_or_else(|| "client".to_string());
     if role != "client" && role != "master" {
-        return Err(AppError::BadRequest("Role must be 'client' or 'master'".to_string()));
+        return Err(AppError::BadRequest(
+            "Role must be 'client' or 'master'".to_string(),
+        ));
     }
 
     // Check if email already exists
-    let existing = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM users WHERE email = $1"
-    )
-    .bind(&req.email)
-    .fetch_one(&state.db)
-    .await?;
+    let existing = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE email = $1")
+        .bind(&req.email)
+        .fetch_one(&state.db)
+        .await?;
 
     if existing > 0 {
         return Err(AppError::Conflict("Email already registered".to_string()));
     }
 
     // Hash password
-    let password_hash = hash(&req.password, DEFAULT_COST)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
+    let password_hash =
+        hash(&req.password, DEFAULT_COST).map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
 
     // Create user
     let user = sqlx::query_as::<_, User>(
@@ -77,19 +77,20 @@ pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> AppResult<Json<AuthResponse>> {
-    let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1 AND is_active = true"
-    )
-    .bind(&req.email)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::Unauthorized("Invalid email or password".to_string()))?;
+    let user =
+        sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1 AND is_active = true")
+            .bind(&req.email)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::Unauthorized("Invalid email or password".to_string()))?;
 
     let valid = verify(&req.password, &user.password_hash)
         .map_err(|e| AppError::Internal(anyhow::anyhow!(e)))?;
 
     if !valid {
-        return Err(AppError::Unauthorized("Invalid email or password".to_string()));
+        return Err(AppError::Unauthorized(
+            "Invalid email or password".to_string(),
+        ));
     }
 
     let token = generate_token(&user, &state.config)?;
@@ -100,20 +101,15 @@ pub async fn login(
     }))
 }
 
-pub async fn me(
-    State(state): State<AppState>,
-    claims: Claims,
-) -> AppResult<Json<UserPublic>> {
+pub async fn me(State(state): State<AppState>, claims: Claims) -> AppResult<Json<UserPublic>> {
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
-    let user = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE id = $1 AND is_active = true"
-    )
-    .bind(user_id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
+    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1 AND is_active = true")
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
     Ok(Json(UserPublic::from(user)))
 }

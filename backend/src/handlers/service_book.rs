@@ -8,8 +8,10 @@ use crate::{
     errors::{AppError, AppResult},
     handlers::auth::AppState,
     models::{
+        service_book::{
+            CreateServiceBookEntryRequest, Reminder, ServiceBookEntry, ServiceBookSummary,
+        },
         user::Claims,
-        service_book::{CreateServiceBookEntryRequest, Reminder, ServiceBookEntry, ServiceBookSummary},
     },
 };
 
@@ -23,7 +25,7 @@ pub async fn get_service_book(
 
     // Verify vehicle ownership
     let count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2"
+        "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2",
     )
     .bind(vehicle_id)
     .bind(owner_id)
@@ -35,7 +37,7 @@ pub async fn get_service_book(
     }
 
     let entries = sqlx::query_as::<_, ServiceBookEntry>(
-        "SELECT * FROM service_book_entries WHERE vehicle_id = $1 ORDER BY serviced_at DESC"
+        "SELECT * FROM service_book_entries WHERE vehicle_id = $1 ORDER BY serviced_at DESC",
     )
     .bind(vehicle_id)
     .fetch_all(&state.db)
@@ -75,12 +77,13 @@ pub async fn add_service_book_entry(
     // Check access: owner or master
     let can_access = if claims.role == "client" {
         sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2"
+            "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2",
         )
         .bind(vehicle_id)
         .bind(user_id)
         .fetch_one(&state.db)
-        .await? > 0
+        .await?
+            > 0
     } else {
         // Masters can add entries if they have a completed order for this vehicle
         sqlx::query_scalar::<_, i64>(
@@ -93,10 +96,16 @@ pub async fn add_service_book_entry(
     };
 
     if !can_access {
-        return Err(AppError::Forbidden("Access denied to this vehicle".to_string()));
+        return Err(AppError::Forbidden(
+            "Access denied to this vehicle".to_string(),
+        ));
     }
 
-    let master_id = if claims.role == "master" { Some(user_id) } else { None };
+    let master_id = if claims.role == "master" {
+        Some(user_id)
+    } else {
+        None
+    };
     let serviced_at = req.serviced_at.unwrap_or_else(chrono::Utc::now);
 
     let entry = sqlx::query_as::<_, ServiceBookEntry>(
@@ -133,12 +142,11 @@ pub async fn add_service_book_entry(
 
     // Auto-create reminder if next service mileage set
     if let Some(next_km) = req.next_service_mileage {
-        let vehicle_owner: Option<Uuid> = sqlx::query_scalar(
-            "SELECT owner_id FROM vehicles WHERE id = $1"
-        )
-        .bind(vehicle_id)
-        .fetch_optional(&state.db)
-        .await?;
+        let vehicle_owner: Option<Uuid> =
+            sqlx::query_scalar("SELECT owner_id FROM vehicles WHERE id = $1")
+                .bind(vehicle_id)
+                .fetch_optional(&state.db)
+                .await?;
 
         if let Some(owner_id) = vehicle_owner {
             sqlx::query(
@@ -188,13 +196,12 @@ pub async fn dismiss_reminder(
     let owner_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
-    let result = sqlx::query(
-        "UPDATE reminders SET is_dismissed = true WHERE id = $1 AND user_id = $2"
-    )
-    .bind(reminder_id)
-    .bind(owner_id)
-    .execute(&state.db)
-    .await?;
+    let result =
+        sqlx::query("UPDATE reminders SET is_dismissed = true WHERE id = $1 AND user_id = $2")
+            .bind(reminder_id)
+            .bind(owner_id)
+            .execute(&state.db)
+            .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Reminder not found".to_string()));

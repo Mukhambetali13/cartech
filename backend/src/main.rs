@@ -27,7 +27,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Load config
     let config = Config::from_env()?;
-    tracing::info!("Starting AutoMarket backend on {}:{}", config.server_host, config.server_port);
+    tracing::info!(
+        "Starting AutoMarket backend on {}:{}",
+        config.server_host,
+        config.server_port
+    );
 
     // Connect to database
     let pool = db::create_pool(&config).await?;

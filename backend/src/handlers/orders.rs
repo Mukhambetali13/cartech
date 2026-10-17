@@ -8,8 +8,10 @@ use crate::{
     errors::{AppError, AppResult},
     handlers::auth::AppState,
     models::{
+        order::{
+            CreateOrderRequest, Order, OrderFilter, RateOrderRequest, UpdateOrderStatusRequest,
+        },
         user::Claims,
-        order::{CreateOrderRequest, Order, OrderFilter, RateOrderRequest, UpdateOrderStatusRequest},
     },
 };
 
@@ -68,7 +70,7 @@ pub async fn get_order(
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let order = sqlx::query_as::<_, Order>(
-        "SELECT * FROM orders WHERE id = $1 AND (client_id = $2 OR master_id = $2)"
+        "SELECT * FROM orders WHERE id = $1 AND (client_id = $2 OR master_id = $2)",
     )
     .bind(order_id)
     .bind(user_id)
@@ -85,7 +87,9 @@ pub async fn create_order(
     Json(req): Json<CreateOrderRequest>,
 ) -> AppResult<Json<Order>> {
     if claims.role != "client" {
-        return Err(AppError::Forbidden("Only clients can create orders".to_string()));
+        return Err(AppError::Forbidden(
+            "Only clients can create orders".to_string(),
+        ));
     }
 
     let client_id = Uuid::parse_str(&claims.sub)
@@ -94,7 +98,7 @@ pub async fn create_order(
     // Validate vehicle ownership if provided
     if let Some(vehicle_id) = req.vehicle_id {
         let count = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2"
+            "SELECT COUNT(*) FROM vehicles WHERE id = $1 AND owner_id = $2",
         )
         .bind(vehicle_id)
         .bind(client_id)
@@ -138,16 +142,18 @@ pub async fn update_order_status(
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
-    let order = sqlx::query_as::<_, Order>(
-        "SELECT * FROM orders WHERE id = $1"
-    )
-    .bind(order_id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?;
+    let order = sqlx::query_as::<_, Order>("SELECT * FROM orders WHERE id = $1")
+        .bind(order_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?;
 
     // Validate allowed status transitions
-    let valid_transition = match (claims.role.as_str(), order.status.as_str(), req.status.as_str()) {
+    let valid_transition = match (
+        claims.role.as_str(),
+        order.status.as_str(),
+        req.status.as_str(),
+    ) {
         ("master", "open", "accepted") => true,
         ("master", "accepted", "in_progress") => true,
         ("master", "in_progress", "completed") => true,
@@ -157,34 +163,36 @@ pub async fn update_order_status(
     };
 
     if !valid_transition {
-        return Err(AppError::BadRequest(
-            format!("Invalid status transition from '{}' to '{}'", order.status, req.status)
-        ));
+        return Err(AppError::BadRequest(format!(
+            "Invalid status transition from '{}' to '{}'",
+            order.status, req.status
+        )));
     }
 
-    let updated_order = if claims.role == "master" && order.status == "open" && req.status == "accepted" {
-        // Master accepts the order
-        sqlx::query_as::<_, Order>(
-            r#"UPDATE orders SET
+    let updated_order =
+        if claims.role == "master" && order.status == "open" && req.status == "accepted" {
+            // Master accepts the order
+            sqlx::query_as::<_, Order>(
+                r#"UPDATE orders SET
                status = $1, master_id = $2, price_agreed = $3, updated_at = NOW()
                WHERE id = $4
                RETURNING *"#,
-        )
-        .bind(&req.status)
-        .bind(user_id)
-        .bind(req.price_agreed)
-        .bind(order_id)
-        .fetch_one(&state.db)
-        .await?
-    } else {
-        sqlx::query_as::<_, Order>(
-            "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *"
-        )
-        .bind(&req.status)
-        .bind(order_id)
-        .fetch_one(&state.db)
-        .await?
-    };
+            )
+            .bind(&req.status)
+            .bind(user_id)
+            .bind(req.price_agreed)
+            .bind(order_id)
+            .fetch_one(&state.db)
+            .await?
+        } else {
+            sqlx::query_as::<_, Order>(
+                "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+            )
+            .bind(&req.status)
+            .bind(order_id)
+            .fetch_one(&state.db)
+            .await?
+        };
 
     Ok(Json(updated_order))
 }
@@ -196,14 +204,18 @@ pub async fn rate_order(
     Json(req): Json<RateOrderRequest>,
 ) -> AppResult<Json<Order>> {
     if claims.role != "client" {
-        return Err(AppError::Forbidden("Only clients can rate orders".to_string()));
+        return Err(AppError::Forbidden(
+            "Only clients can rate orders".to_string(),
+        ));
     }
 
     let client_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     if req.rating < 1 || req.rating > 5 {
-        return Err(AppError::BadRequest("Rating must be between 1 and 5".to_string()));
+        return Err(AppError::BadRequest(
+            "Rating must be between 1 and 5".to_string(),
+        ));
     }
 
     let order = sqlx::query_as::<_, Order>(

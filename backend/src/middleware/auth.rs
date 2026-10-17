@@ -5,11 +5,7 @@ use axum::{
 };
 use jsonwebtoken::{decode, DecodingKey, Validation};
 
-use crate::{
-    errors::AppError,
-    handlers::auth::AppState,
-    models::user::Claims,
-};
+use crate::{errors::AppError, handlers::auth::AppState, models::user::Claims};
 
 #[async_trait]
 impl FromRequestParts<AppState> for Claims {

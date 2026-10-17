@@ -90,7 +90,7 @@ pub struct AuthResponse {
 // JWT Claims
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: String,  // user id
+    pub sub: String, // user id
     pub email: String,
     pub role: String,
     pub exp: usize,

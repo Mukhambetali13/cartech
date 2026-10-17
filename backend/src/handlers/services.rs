@@ -8,8 +8,8 @@ use crate::{
     errors::{AppError, AppResult},
     handlers::auth::AppState,
     models::{
-        user::Claims,
         service::{CreateServiceRequest, Service, ServiceCategory, ServiceFilter},
+        user::Claims,
     },
 };
 
@@ -17,7 +17,7 @@ pub async fn list_categories(
     State(state): State<AppState>,
 ) -> AppResult<Json<Vec<ServiceCategory>>> {
     let categories = sqlx::query_as::<_, ServiceCategory>(
-        "SELECT * FROM service_categories ORDER BY sort_order ASC"
+        "SELECT * FROM service_categories ORDER BY sort_order ASC",
     )
     .fetch_all(&state.db)
     .await?;
@@ -32,7 +32,8 @@ pub async fn list_services(
     // Build dynamic query based on filters
     let mut query = "SELECT s.* FROM services s
         JOIN service_categories sc ON s.category_id = sc.id
-        WHERE s.is_active = true".to_string();
+        WHERE s.is_active = true"
+        .to_string();
 
     let mut conditions: Vec<String> = vec![];
     let mut param_idx = 1i32;
@@ -76,13 +77,12 @@ pub async fn get_service(
     State(state): State<AppState>,
     Path(service_id): Path<Uuid>,
 ) -> AppResult<Json<Service>> {
-    let service = sqlx::query_as::<_, Service>(
-        "SELECT * FROM services WHERE id = $1 AND is_active = true"
-    )
-    .bind(service_id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Service not found".to_string()))?;
+    let service =
+        sqlx::query_as::<_, Service>("SELECT * FROM services WHERE id = $1 AND is_active = true")
+            .bind(service_id)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Service not found".to_string()))?;
 
     Ok(Json(service))
 }
@@ -93,19 +93,20 @@ pub async fn create_service(
     Json(req): Json<CreateServiceRequest>,
 ) -> AppResult<Json<Service>> {
     if claims.role != "master" {
-        return Err(AppError::Forbidden("Only masters can create services".to_string()));
+        return Err(AppError::Forbidden(
+            "Only masters can create services".to_string(),
+        ));
     }
 
     let master_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     // Verify category exists
-    let cat_count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM service_categories WHERE id = $1"
-    )
-    .bind(req.category_id)
-    .fetch_one(&state.db)
-    .await?;
+    let cat_count =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM service_categories WHERE id = $1")
+            .bind(req.category_id)
+            .fetch_one(&state.db)
+            .await?;
 
     if cat_count == 0 {
         return Err(AppError::NotFound("Category not found".to_string()));
@@ -139,7 +140,7 @@ pub async fn list_master_services(
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let services = sqlx::query_as::<_, Service>(
-        "SELECT * FROM services WHERE master_id = $1 ORDER BY created_at DESC"
+        "SELECT * FROM services WHERE master_id = $1 ORDER BY created_at DESC",
     )
     .bind(master_id)
     .fetch_all(&state.db)

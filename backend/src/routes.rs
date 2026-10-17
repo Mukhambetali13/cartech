@@ -24,9 +24,15 @@ pub fn create_router(state: AppState) -> Router {
             get(get_vehicle).put(update_vehicle).delete(delete_vehicle),
         )
         // Service book
-        .route("/vehicles/{id}/service-book", get(get_service_book).post(add_service_book_entry))
+        .route(
+            "/vehicles/{id}/service-book",
+            get(get_service_book).post(add_service_book_entry),
+        )
         .route("/vehicles/{id}/reminders", get(get_reminders))
-        .route("/vehicles/{vehicle_id}/reminders/{reminder_id}", put(dismiss_reminder))
+        .route(
+            "/vehicles/{vehicle_id}/reminders/{reminder_id}",
+            put(dismiss_reminder),
+        )
         // Services catalog
         .route("/services/categories", get(list_categories))
         .route("/services", get(list_services).post(create_service))
@@ -38,7 +44,5 @@ pub fn create_router(state: AppState) -> Router {
         .route("/orders/{id}/status", put(update_order_status))
         .route("/orders/{id}/rate", post(rate_order));
 
-    Router::new()
-        .nest("/api", api)
-        .with_state(state)
+    Router::new().nest("/api", api).with_state(state)
 }
