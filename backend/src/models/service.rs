@@ -31,6 +31,15 @@ pub struct Service {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct ServiceCatalogItem {
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub service: Service,
+    pub master_name: String,
+    pub master_company: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ServiceWithCategory {
     #[serde(flatten)]
@@ -53,6 +62,7 @@ pub struct CreateServiceRequest {
 pub struct ServiceFilter {
     pub service_type: Option<String>, // 'sos' | 'planned'
     pub category_slug: Option<String>,
-    pub city: Option<String>,
     pub is_mobile: Option<bool>,
+    pub min_price: Option<f64>,
+    pub max_price: Option<f64>,
 }

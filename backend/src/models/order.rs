@@ -27,6 +27,14 @@ pub struct Order {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct OrderListItem {
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub order: Order,
+    pub counterparty_name: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateOrderRequest {
     pub vehicle_id: Option<Uuid>,

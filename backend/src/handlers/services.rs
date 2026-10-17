@@ -8,7 +8,9 @@ use crate::{
     errors::{AppError, AppResult},
     handlers::auth::AppState,
     models::{
-        service::{CreateServiceRequest, Service, ServiceCategory, ServiceFilter},
+        service::{
+            CreateServiceRequest, Service, ServiceCatalogItem, ServiceCategory, ServiceFilter,
+        },
         user::Claims,
     },
 };
@@ -28,27 +30,38 @@ pub async fn list_categories(
 pub async fn list_services(
     State(state): State<AppState>,
     Query(filter): Query<ServiceFilter>,
-) -> AppResult<Json<Vec<Service>>> {
-    // Build dynamic query based on filters
-    let mut query = "SELECT s.* FROM services s
+) -> AppResult<Json<Vec<ServiceCatalogItem>>> {
+    let mut query = "SELECT s.*, u.full_name AS master_name, mp.company_name AS master_company
+        FROM services s
         JOIN service_categories sc ON s.category_id = sc.id
+        JOIN users u ON u.id = s.master_id
+        LEFT JOIN master_profiles mp ON mp.user_id = u.id
         WHERE s.is_active = true"
         .to_string();
 
     let mut conditions: Vec<String> = vec![];
-    let mut param_idx = 1i32;
+    let mut bind_idx = 1;
 
     if filter.service_type.is_some() {
-        conditions.push(format!("sc.service_type = ${}", param_idx));
-        param_idx += 1;
+        conditions.push(format!("sc.service_type = ${bind_idx}"));
+        bind_idx += 1;
     }
     if filter.category_slug.is_some() {
-        conditions.push(format!("sc.slug = ${}", param_idx));
-        param_idx += 1;
+        conditions.push(format!("sc.slug = ${bind_idx}"));
+        bind_idx += 1;
     }
     if filter.is_mobile.is_some() {
-        conditions.push(format!("s.is_mobile = ${}", param_idx));
-        // param_idx += 1;  // last param, no need to increment
+        conditions.push(format!("s.is_mobile = ${bind_idx}"));
+        bind_idx += 1;
+    }
+    if filter.min_price.is_some() {
+        conditions.push(format!(
+            "COALESCE(s.price_to, s.price_from) >= ${bind_idx}::numeric"
+        ));
+        bind_idx += 1;
+    }
+    if filter.max_price.is_some() {
+        conditions.push(format!("s.price_from <= ${bind_idx}::numeric"));
     }
 
     if !conditions.is_empty() {
@@ -56,8 +69,7 @@ pub async fn list_services(
     }
     query += " ORDER BY s.created_at DESC";
 
-    // Use simple query with all optional bindings
-    let mut q = sqlx::query_as::<_, Service>(&query);
+    let mut q = sqlx::query_as::<_, ServiceCatalogItem>(&query);
     if let Some(st) = &filter.service_type {
         q = q.bind(st);
     }
@@ -66,6 +78,12 @@ pub async fn list_services(
     }
     if let Some(im) = filter.is_mobile {
         q = q.bind(im);
+    }
+    if let Some(min_price) = filter.min_price {
+        q = q.bind(min_price.to_string());
+    }
+    if let Some(max_price) = filter.max_price {
+        q = q.bind(max_price.to_string());
     }
 
     let services = q.fetch_all(&state.db).await?;
@@ -95,6 +113,21 @@ pub async fn create_service(
     if claims.role != "master" {
         return Err(AppError::Forbidden(
             "Only masters can create services".to_string(),
+        ));
+    }
+
+    if req.title.trim().is_empty() {
+        return Err(AppError::BadRequest(
+            "Service title must not be empty".to_string(),
+        ));
+    }
+    if req.price_from.is_some_and(|price| price < 0.0)
+        || req.price_to.is_some_and(|price| price < 0.0)
+        || matches!((req.price_from, req.price_to), (Some(from), Some(to)) if to < from)
+        || req.duration_minutes.is_some_and(|duration| duration <= 0)
+    {
+        return Err(AppError::BadRequest(
+            "Price range and duration must be valid positive values".to_string(),
         ));
     }
 

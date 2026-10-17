@@ -1,5 +1,5 @@
 use axum::{
-    routing::{delete, get, post, put},
+    routing::{get, post, put},
     Router,
 };
 
@@ -20,29 +20,29 @@ pub fn create_router(state: AppState) -> Router {
         // Vehicles (protected)
         .route("/vehicles", get(list_vehicles).post(create_vehicle))
         .route(
-            "/vehicles/{id}",
+            "/vehicles/:id",
             get(get_vehicle).put(update_vehicle).delete(delete_vehicle),
         )
         // Service book
         .route(
-            "/vehicles/{id}/service-book",
+            "/vehicles/:id/service-book",
             get(get_service_book).post(add_service_book_entry),
         )
-        .route("/vehicles/{id}/reminders", get(get_reminders))
+        .route("/vehicles/:id/reminders", get(get_reminders))
         .route(
-            "/vehicles/{vehicle_id}/reminders/{reminder_id}",
+            "/vehicles/:vehicle_id/reminders/:reminder_id",
             put(dismiss_reminder),
         )
         // Services catalog
         .route("/services/categories", get(list_categories))
         .route("/services", get(list_services).post(create_service))
-        .route("/services/{id}", get(get_service))
+        .route("/services/:id", get(get_service))
         .route("/services/my", get(list_master_services))
         // Orders
         .route("/orders", get(list_orders).post(create_order))
-        .route("/orders/{id}", get(get_order))
-        .route("/orders/{id}/status", put(update_order_status))
-        .route("/orders/{id}/rate", post(rate_order));
+        .route("/orders/:id", get(get_order))
+        .route("/orders/:id/status", put(update_order_status))
+        .route("/orders/:id/rate", post(rate_order));
 
     Router::new().nest("/api", api).with_state(state)
 }

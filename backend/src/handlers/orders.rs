@@ -9,7 +9,8 @@ use crate::{
     handlers::auth::AppState,
     models::{
         order::{
-            CreateOrderRequest, Order, OrderFilter, RateOrderRequest, UpdateOrderStatusRequest,
+            CreateOrderRequest, Order, OrderFilter, OrderListItem, RateOrderRequest,
+            UpdateOrderStatusRequest,
         },
         user::Claims,
     },
@@ -19,35 +20,43 @@ pub async fn list_orders(
     State(state): State<AppState>,
     claims: Claims,
     Query(filter): Query<OrderFilter>,
-) -> AppResult<Json<Vec<Order>>> {
+) -> AppResult<Json<Vec<OrderListItem>>> {
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let mut query = if claims.role == "master" {
-        "SELECT * FROM orders WHERE master_id = $1".to_string()
+        "SELECT o.*, COALESCE(mp.company_name, client.full_name) AS counterparty_name
+         FROM orders o
+         JOIN users client ON client.id = o.client_id
+         LEFT JOIN users master ON master.id = o.master_id
+         LEFT JOIN master_profiles mp ON mp.user_id = master.id
+         WHERE (o.master_id = $1 OR (o.status = 'open' AND o.master_id IS NULL))"
+            .to_string()
     } else {
-        "SELECT * FROM orders WHERE client_id = $1".to_string()
+        "SELECT o.*, COALESCE(mp.company_name, master.full_name) AS counterparty_name
+         FROM orders o
+         LEFT JOIN users master ON master.id = o.master_id
+         LEFT JOIN master_profiles mp ON mp.user_id = master.id
+         WHERE o.client_id = $1"
+            .to_string()
     };
 
-    // Also show open orders to masters (they can accept them)
-    if claims.role == "master" {
-        query = "SELECT * FROM orders WHERE (master_id = $1 OR (status = 'open' AND master_id IS NULL))".to_string();
-    }
-
     let mut conditions = vec![];
+    let mut bind_idx = 2;
     if filter.status.is_some() {
-        conditions.push("status = $2");
+        conditions.push(format!("o.status = ${bind_idx}"));
+        bind_idx += 1;
     }
     if filter.service_type.is_some() {
-        conditions.push("service_type = $3");
+        conditions.push(format!("o.service_type = ${bind_idx}"));
     }
 
     if !conditions.is_empty() {
         query += &format!(" AND {}", conditions.join(" AND "));
     }
-    query += " ORDER BY created_at DESC";
+    query += " ORDER BY o.created_at DESC";
 
-    let mut q = sqlx::query_as::<_, Order>(&query).bind(user_id);
+    let mut q = sqlx::query_as::<_, OrderListItem>(&query).bind(user_id);
 
     if let Some(s) = &filter.status {
         q = q.bind(s);
@@ -95,6 +104,33 @@ pub async fn create_order(
     let client_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
+    let (master_id, service_type) = if let Some(service_id) = req.service_id {
+        let (master_id, service_type) = sqlx::query_as::<_, (Uuid, String)>(
+            "SELECT s.master_id, sc.service_type
+             FROM services s
+             JOIN service_categories sc ON sc.id = s.category_id
+             WHERE s.id = $1 AND s.is_active = true",
+        )
+        .bind(service_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Service not found".to_string()))?;
+        (Some(master_id), service_type)
+    } else {
+        if req.service_type != "sos" && req.service_type != "planned" {
+            return Err(AppError::BadRequest(
+                "Service type must be 'sos' or 'planned'".to_string(),
+            ));
+        }
+        (None, req.service_type.clone())
+    };
+
+    if req.title.trim().is_empty() {
+        return Err(AppError::BadRequest(
+            "Order title must not be empty".to_string(),
+        ));
+    }
+
     // Validate vehicle ownership if provided
     if let Some(vehicle_id) = req.vehicle_id {
         let count = sqlx::query_scalar::<_, i64>(
@@ -112,15 +148,16 @@ pub async fn create_order(
 
     let order = sqlx::query_as::<_, Order>(
         r#"INSERT INTO orders
-           (client_id, vehicle_id, service_id, service_type, title, description,
+           (client_id, master_id, vehicle_id, service_id, service_type, title, description,
             address, latitude, longitude, scheduled_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            RETURNING *"#,
     )
     .bind(client_id)
+    .bind(master_id)
     .bind(req.vehicle_id)
     .bind(req.service_id)
-    .bind(&req.service_type)
+    .bind(service_type)
     .bind(&req.title)
     .bind(&req.description)
     .bind(&req.address)
@@ -148,6 +185,25 @@ pub async fn update_order_status(
         .await?
         .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?;
 
+    if (claims.role == "client" && order.client_id != user_id)
+        || (claims.role == "master"
+            && order
+                .master_id
+                .is_some_and(|master_id| master_id != user_id))
+    {
+        return Err(AppError::Forbidden(
+            "You are not allowed to update this order".to_string(),
+        ));
+    }
+    if claims.role == "master"
+        && order.master_id.is_none()
+        && !(order.status == "open" && req.status == "accepted")
+    {
+        return Err(AppError::Forbidden(
+            "Accept an open request before changing its status".to_string(),
+        ));
+    }
+
     // Validate allowed status transitions
     let valid_transition = match (
         claims.role.as_str(),
@@ -169,30 +225,35 @@ pub async fn update_order_status(
         )));
     }
 
-    let updated_order =
-        if claims.role == "master" && order.status == "open" && req.status == "accepted" {
-            // Master accepts the order
-            sqlx::query_as::<_, Order>(
-                r#"UPDATE orders SET
+    let updated_order = if claims.role == "master"
+        && order.status == "open"
+        && req.status == "accepted"
+    {
+        // Master accepts the order
+        sqlx::query_as::<_, Order>(
+            r#"UPDATE orders SET
                status = $1, master_id = $2, price_agreed = $3, updated_at = NOW()
-               WHERE id = $4
+               WHERE id = $4 AND status = 'open' AND (master_id IS NULL OR master_id = $2)
                RETURNING *"#,
+        )
+        .bind(&req.status)
+        .bind(user_id)
+        .bind(req.price_agreed)
+        .bind(order_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::Conflict("This request is no longer available".to_string()))?
+    } else {
+        sqlx::query_as::<_, Order>(
+                "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 AND (client_id = $3 OR master_id = $3) RETURNING *",
             )
             .bind(&req.status)
+            .bind(order_id)
             .bind(user_id)
-            .bind(req.price_agreed)
-            .bind(order_id)
-            .fetch_one(&state.db)
+            .fetch_optional(&state.db)
             .await?
-        } else {
-            sqlx::query_as::<_, Order>(
-                "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
-            )
-            .bind(&req.status)
-            .bind(order_id)
-            .fetch_one(&state.db)
-            .await?
-        };
+            .ok_or_else(|| AppError::Conflict("The order has changed; refresh and try again".to_string()))?
+    };
 
     Ok(Json(updated_order))
 }
