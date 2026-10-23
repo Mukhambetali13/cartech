@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "AutoMarket",
+    "slug": "automarket",
+    "scheme": "automarket",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.automarket.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.automarket.app"
+    }
+  }
+}

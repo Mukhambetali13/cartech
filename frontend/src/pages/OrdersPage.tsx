@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ordersApi } from '../api';
 import { useAuthStore } from '../store/authStore';
@@ -29,9 +29,11 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await ordersApi.list({
         status: statusFilter || undefined,
@@ -39,13 +41,13 @@ export default function OrdersPage() {
       });
       setOrders(data);
     } catch {
-      // ignore
+      setError('Не удалось загрузить заявки. Проверьте подключение и попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, typeFilter]);
 
-  useEffect(() => { fetchOrders(); }, [statusFilter, typeFilter]);
+  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
 
   const handleAccept = async (orderId: string) => {
     try {
@@ -119,6 +121,7 @@ export default function OrdersPage() {
           </button>
         </div>
 
+        {error && <div className="alert alert-warning" role="alert" style={{ marginBottom: 'var(--spacing-lg)' }}>{error}</div>}
         {loading ? (
           <div className="loader"><div className="spinner" /></div>
         ) : orders.length === 0 ? (
@@ -151,6 +154,11 @@ export default function OrdersPage() {
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                         {new Date(order.created_at).toLocaleDateString('ru-RU')}
                       </span>
+                      {order.counterparty_name && (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                          {user?.role === 'master' ? 'Клиент' : 'Мастер'}: {order.counterparty_name}
+                        </span>
+                      )}
                     </div>
                   </div>
 

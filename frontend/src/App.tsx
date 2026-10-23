@@ -10,6 +10,7 @@ import AddVehiclePage from './pages/AddVehiclePage';
 import ServiceBookPage from './pages/ServiceBookPage';
 import ServicesPage from './pages/ServicesPage';
 import OrdersPage from './pages/OrdersPage';
+import NewOrderPage from './pages/NewOrderPage';
 
 // Protected route wrapper
 function Protected({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,14 @@ export default function App() {
         <Route
           path="/orders"
           element={<Protected><OrdersPage /></Protected>}
+        />
+        <Route
+          path="/orders/new"
+          element={<Protected><NewOrderPage /></Protected>}
+        />
+        <Route
+          path="/services/my"
+          element={<Protected><ServicesPage /></Protected>}
         />
 
         {/* Fallback */}

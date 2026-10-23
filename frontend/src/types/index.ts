@@ -56,6 +56,18 @@ export interface Service {
   is_mobile: boolean;
   is_active: boolean;
   created_at: string;
+  master_name?: string;
+  master_company?: string;
+}
+
+export interface CreateServiceRequest {
+  category_id: string;
+  title: string;
+  description?: string;
+  price_from?: number;
+  price_to?: number;
+  duration_minutes?: number;
+  is_mobile: boolean;
 }
 
 export type OrderStatus = 'open' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
@@ -81,6 +93,7 @@ export interface Order {
   client_review?: string;
   created_at: string;
   updated_at: string;
+  counterparty_name?: string;
 }
 
 export interface ServiceBookEntry {

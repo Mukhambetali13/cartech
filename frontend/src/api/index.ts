@@ -2,6 +2,7 @@ import api from './client';
 import type {
   AuthResponse,
   CreateOrderRequest,
+  CreateServiceRequest,
   CreateServiceBookEntryRequest,
   CreateVehicleRequest,
   LoginRequest,
@@ -38,10 +39,16 @@ export const vehiclesApi = {
 export const servicesApi = {
   categories: () =>
     api.get<ServiceCategory[]>('/services/categories').then((r) => r.data),
-  list: (params?: { service_type?: string; category_slug?: string; is_mobile?: boolean }) =>
+  list: (params?: {
+    service_type?: string;
+    category_slug?: string;
+    is_mobile?: boolean;
+    min_price?: number;
+    max_price?: number;
+  }) =>
     api.get<Service[]>('/services', { params }).then((r) => r.data),
   get: (id: string) => api.get<Service>(`/services/${id}`).then((r) => r.data),
-  create: (data: Omit<Service, 'id' | 'master_id' | 'is_active' | 'created_at'>) =>
+  create: (data: CreateServiceRequest) =>
     api.post<Service>('/services', data).then((r) => r.data),
   myServices: () => api.get<Service[]>('/services/my').then((r) => r.data),
 };
