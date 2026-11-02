@@ -17,7 +17,7 @@ export default function HomeScreen() {
   return (
     <Page>
       <View style={styles.homeHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.eyebrow}>AUTOMARKET</Text>
           <Text style={styles.pageTitle}>Здравствуйте, {user?.full_name || 'водитель'}!</Text>
           <Text style={styles.mutedText}>

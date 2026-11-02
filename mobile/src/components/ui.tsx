@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
 export function Page({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+  const insets = useSafeAreaInsets();
+  const safeTop = { paddingTop: styles.pageContent.paddingTop + insets.top };
+
   if (!scroll) {
     return (
       <View style={styles.page}>
-        <View style={[styles.pageContent, { flex: 1 }]}>{children}</View>
+        <View style={[styles.pageContent, safeTop, { flex: 1 }]}>{children}</View>
       </View>
     );
   }
@@ -14,7 +18,7 @@ export function Page({ children, scroll = true }: { children: ReactNode; scroll?
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={styles.pageContent}
+      contentContainerStyle={[styles.pageContent, safeTop]}
       keyboardShouldPersistTaps="handled"
     >
       {children}

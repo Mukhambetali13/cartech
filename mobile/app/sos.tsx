@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Service } from '@shared/types/index';
 import { apiErrorMessage } from '../src/api/client';
 import { ordersApi, servicesApi } from '../src/api';
@@ -25,6 +26,7 @@ export default function SosRequestScreen() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const loadServices = useCallback(async () => {
     setError('');
@@ -87,7 +89,7 @@ export default function SosRequestScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={styles.pageContent}
+      contentContainerStyle={[styles.pageContent, { paddingTop: styles.pageContent.paddingTop + insets.top }]}
       keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.eyebrow}>СРОЧНАЯ ПОМОЩЬ</Text>

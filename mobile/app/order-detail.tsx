@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Order, OrderOfferWithMaster } from '@shared/types/index';
 import { apiErrorMessage, offersApi, ordersApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
@@ -48,6 +49,7 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const insets = useSafeAreaInsets();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [offers, setOffers] = useState<OrderOfferWithMaster[]>([]);
@@ -164,7 +166,7 @@ export default function OrderDetailScreen() {
 
   if (error || !order) {
     return (
-      <View style={[s.page, { padding: 24 }]}>
+      <View style={[s.page, { padding: 24, paddingTop: 24 + insets.top }]}>
         <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
           <Text style={{ color: colors.primary, fontWeight: '700' }}>← Назад</Text>
         </Pressable>
@@ -175,7 +177,7 @@ export default function OrderDetailScreen() {
 
   return (
     <KeyboardAvoidingView style={s.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingTop: 20 + insets.top, paddingBottom: 40 }}>
         {/* Back */}
         <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
           <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>← Назад</Text>
