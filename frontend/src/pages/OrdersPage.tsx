@@ -158,7 +158,7 @@ export default function OrdersPage() {
 
                   <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', flexShrink: 0 }}>
                     {order.price_agreed && (
-                      <span className="price">{Number(order.price_agreed).toLocaleString()} ₽</span>
+                      <span className="price">{Number(order.price_agreed).toLocaleString()} ₸</span>
                     )}
                     {/* Master on open orders → prompt to make a price offer */}
                     <Link to={`/orders/${order.id}`} className="btn btn-ghost btn-sm">

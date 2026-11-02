@@ -130,7 +130,7 @@ export default function SosRequestScreen() {
                   <Text style={styles.mutedText}>
                     {service.master_company || service.master_name || 'Мастер AutoMarket'}
                     {service.price_from != null
-                      ? ` · от ${Number(service.price_from).toLocaleString('ru-RU')} ₽`
+                      ? ` · от ${Number(service.price_from).toLocaleString('ru-RU')} ₸`
                       : ''}
                   </Text>
                 </SectionCard>

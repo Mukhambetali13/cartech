@@ -171,7 +171,7 @@ export default function ServiceBookPage() {
                     <div style={{ display: 'flex', gap: 'var(--spacing-md)', flexWrap: 'wrap', alignItems: 'center' }}>
                       {entry.cost != null && (
                         <div>
-                          <span className="price">{Number(entry.cost).toLocaleString()} ₽</span>
+                          <span className="price">{Number(entry.cost).toLocaleString()} ₸</span>
                         </div>
                       )}
                       {entry.next_service_mileage && (

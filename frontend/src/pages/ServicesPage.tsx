@@ -179,11 +179,11 @@ export default function ServicesPage() {
             </div>
             <div className="grid-3">
               <div className="form-group">
-                <label className="form-label" htmlFor="service-price-from">Цена от, ₽</label>
+                <label className="form-label" htmlFor="service-price-from">Цена от, ₸</label>
                 <input id="service-price-from" className="form-input" type="number" min="0" step="1" value={serviceForm.price_from ?? ''} onChange={(event) => setServiceForm({ ...serviceForm, price_from: event.target.value === '' ? undefined : Number(event.target.value) })} />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="service-price-to">Цена до, ₽</label>
+                <label className="form-label" htmlFor="service-price-to">Цена до, ₸</label>
                 <input id="service-price-to" className="form-input" type="number" min="0" step="1" value={serviceForm.price_to ?? ''} onChange={(event) => setServiceForm({ ...serviceForm, price_to: event.target.value === '' ? undefined : Number(event.target.value) })} />
               </div>
               <div className="form-group">
@@ -226,11 +226,11 @@ export default function ServicesPage() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="service-filter-min-price">Цена от, ₽</label>
+                <label className="form-label" htmlFor="service-filter-min-price">Цена от, ₸</label>
                 <input id="service-filter-min-price" className="form-input" type="number" min="0" value={minPrice} onChange={(event) => updateFilter('min_price', event.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="service-filter-max-price">Цена до, ₽</label>
+                <label className="form-label" htmlFor="service-filter-max-price">Цена до, ₸</label>
                 <input id="service-filter-max-price" className="form-input" type="number" min="0" value={maxPrice} onChange={(event) => updateFilter('max_price', event.target.value)} />
               </div>
             </div>
@@ -292,7 +292,7 @@ export default function ServicesPage() {
                   {service.description && <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--spacing-md)', lineHeight: 1.5 }}>{service.description}</p>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 'auto' }}>
                     <div>
-                      {service.price_from != null && <div className="price">от {Number(service.price_from).toLocaleString()} ₽{service.price_to != null && <span className="price-range"> — {Number(service.price_to).toLocaleString()} ₽</span>}</div>}
+                      {service.price_from != null && <div className="price">от {Number(service.price_from).toLocaleString()} ₸{service.price_to != null && <span className="price-range"> — {Number(service.price_to).toLocaleString()} ₸</span>}</div>}
                       {service.duration_minutes != null && <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>~{service.duration_minutes} мин</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

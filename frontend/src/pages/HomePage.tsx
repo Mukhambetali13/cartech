@@ -17,13 +17,6 @@ const plannedServices = [
   { icon: '🔄', name: 'Шиномонтаж', slug: 'tire-service' },
 ];
 
-const stats = [
-  { value: '1 200+', label: 'Мастеров' },
-  { value: '15 000+', label: 'Выполненных заявок' },
-  { value: '4.9★', label: 'Средний рейтинг' },
-  { value: '24/7', label: 'SOS поддержка' },
-];
-
 export default function HomePage() {
   const { user } = useAuthStore();
 
@@ -56,18 +49,6 @@ export default function HomePage() {
               {user ? 'Личный кабинет' : 'Зарегистрироваться'}
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ── Stats ── */}
-      <section className="container" style={{ margin: '0 auto var(--spacing-3xl)' }}>
-        <div className="stats-row">
-          {stats.map((s) => (
-            <div key={s.label} className="stat-card">
-              <div className="stat-value">{s.value}</div>
-              <div className="stat-label">{s.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 

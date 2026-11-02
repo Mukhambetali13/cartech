@@ -658,38 +658,6 @@ h5 { font-size: 1rem; font-weight: 600; }
   box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.2);
 }
 
-/* ── Stats Row ── */
-.stats-row {
-  display: flex;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
-}
-
-.stat-card {
-  flex: 1;
-  min-width: 120px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  background: var(--gradient-hero);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
 /* ── Alert / Reminder Banner ── */
 .alert {
   display: flex;

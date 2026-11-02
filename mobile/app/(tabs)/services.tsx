@@ -61,8 +61,8 @@ export default function ServicesScreen() {
               </Text>
               {item.description ? <Text style={styles.cardDescription}>{item.description}</Text> : null}
               <Text style={styles.price}>
-                {item.price_from != null ? `от ${Number(item.price_from).toLocaleString('ru-RU')} ₽` : 'Цена по договорённости'}
-                {item.price_to != null ? ` · до ${Number(item.price_to).toLocaleString('ru-RU')} ₽` : ''}
+                {item.price_from != null ? `от ${Number(item.price_from).toLocaleString('ru-RU')} ₸` : 'Цена по договорённости'}
+                {item.price_to != null ? ` · до ${Number(item.price_to).toLocaleString('ru-RU')} ₸` : ''}
               </Text>
             </SectionCard>
           )}

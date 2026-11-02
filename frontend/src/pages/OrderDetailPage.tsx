@@ -186,7 +186,7 @@ export default function OrderDetailPage() {
             {order.price_agreed && (
               <div style={{ textAlign: 'right' }}>
                 <div className="price" style={{ fontSize: '1.4rem' }}>
-                  {Number(order.price_agreed).toLocaleString()} ₽
+                  {Number(order.price_agreed).toLocaleString()} ₸
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Согласованная цена</div>
               </div>
@@ -269,7 +269,7 @@ export default function OrderDetailPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Ваше текущее предложение:</span>
-                  <span className="price">{Number(myOffer.price).toLocaleString()} ₽</span>
+                  <span className="price">{Number(myOffer.price).toLocaleString()} ₸</span>
                 </div>
                 {myOffer.comment && (
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 6 }}>
@@ -288,7 +288,7 @@ export default function OrderDetailPage() {
             <form onSubmit={(e) => { void handleSubmitOffer(e); }}>
               <div style={{ display: 'flex', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ flex: '1 1 160px' }}>
-                  <label className="form-label" htmlFor="offer-price">Цена (₽) *</label>
+                  <label className="form-label" htmlFor="offer-price">Цена (₸) *</label>
                   <input
                     id="offer-price"
                     className="form-input"
@@ -388,7 +388,7 @@ export default function OrderDetailPage() {
                         )}
                       </div>
                       <div className="price" style={{ fontSize: '1.4rem', flexShrink: 0 }}>
-                        {Number(acceptedOffer.price).toLocaleString()} ₽
+                        {Number(acceptedOffer.price).toLocaleString()} ₸
                       </div>
                     </div>
                   </div>
@@ -436,7 +436,7 @@ export default function OrderDetailPage() {
 
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--spacing-sm)', flexShrink: 0 }}>
                         <div className="price" style={{ fontSize: '1.3rem' }}>
-                          {Number(offer.price).toLocaleString()} ₽
+                          {Number(offer.price).toLocaleString()} ₸
                         </div>
                         {isOpen && (
                           <div style={{ display: 'flex', gap: 8 }}>
@@ -482,7 +482,7 @@ export default function OrderDetailPage() {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ color: 'var(--text-muted)' }}>{offer.master_name}</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{Number(offer.price).toLocaleString()} ₽</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{Number(offer.price).toLocaleString()} ₸</span>
                           </div>
                         </div>
                       ))}
@@ -527,7 +527,7 @@ export default function OrderDetailPage() {
                   </p>
                 )}
               </div>
-              <span className="price">{Number(myOffer.price).toLocaleString()} ₽</span>
+              <span className="price">{Number(myOffer.price).toLocaleString()} ₸</span>
             </div>
           </div>
         )}

@@ -200,7 +200,7 @@ export default function OrderDetailScreen() {
           ) : null}
           {order.price_agreed != null ? (
             <Text style={[ui.price, { marginTop: 10 }]}>
-              {Number(order.price_agreed).toLocaleString('ru-RU')} ₽  — согласованная цена
+              {Number(order.price_agreed).toLocaleString('ru-RU')} ₸  — согласованная цена
             </Text>
           ) : null}
           <Text style={[ui.mutedText, { marginTop: 8, fontSize: 12 }]}>
@@ -263,7 +263,7 @@ export default function OrderDetailScreen() {
               <View style={s.currentOffer}>
                 <Text style={s.currentOfferLabel}>Ваше текущее предложение:</Text>
                 <Text style={[ui.price, { marginTop: 0 }]}>
-                  {Number(myOffer.price).toLocaleString('ru-RU')} ₽
+                  {Number(myOffer.price).toLocaleString('ru-RU')} ₸
                 </Text>
                 {myOffer.comment ? (
                   <Text style={ui.mutedText}>{myOffer.comment}</Text>
@@ -275,7 +275,7 @@ export default function OrderDetailScreen() {
               <Text style={s.successText}>✅ Предложение отправлено! Ожидайте ответа клиента.</Text>
             )}
 
-            <Text style={s.fieldLabel}>Цена (₽) *</Text>
+            <Text style={s.fieldLabel}>Цена (₸) *</Text>
             <TextInput
               ref={priceRef}
               style={ui.input}
@@ -320,7 +320,7 @@ export default function OrderDetailScreen() {
               <Text style={[ui.badge, offerBadgeStyle(myOffer.status)]}>
                 {offerStatusLabel[myOffer.status]}
               </Text>
-              <Text style={ui.price}>{Number(myOffer.price).toLocaleString('ru-RU')} ₽</Text>
+              <Text style={ui.price}>{Number(myOffer.price).toLocaleString('ru-RU')} ₸</Text>
             </View>
             {myOffer.comment ? <Text style={[ui.mutedText, { marginTop: 6 }]}>{myOffer.comment}</Text> : null}
           </SectionCard>
@@ -339,7 +339,7 @@ export default function OrderDetailScreen() {
                 <Stars value={acceptedOffer.master_rating} />
               </View>
               <Text style={[ui.price, { fontSize: 18 }]}>
-                {Number(acceptedOffer.price).toLocaleString('ru-RU')} ₽
+                {Number(acceptedOffer.price).toLocaleString('ru-RU')} ₸
               </Text>
             </View>
             {acceptedOffer.comment ? (
@@ -395,7 +395,7 @@ export default function OrderDetailScreen() {
                     </Text>
                   </View>
                   <Text style={[ui.price, { fontSize: 16, flexShrink: 0 }]}>
-                    {Number(offer.price).toLocaleString('ru-RU')} ₽
+                    {Number(offer.price).toLocaleString('ru-RU')} ₸
                   </Text>
                 </View>
 

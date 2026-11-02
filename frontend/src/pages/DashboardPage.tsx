@@ -196,7 +196,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     {order.price_agreed && (
-                      <div className="price">{Number(order.price_agreed).toLocaleString()} ₽</div>
+                      <div className="price">{Number(order.price_agreed).toLocaleString()} ₸</div>
                     )}
                   </Link>
                 ))}
