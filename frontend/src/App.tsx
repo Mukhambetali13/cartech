@@ -10,6 +10,7 @@ import AddVehiclePage from './pages/AddVehiclePage';
 import ServiceBookPage from './pages/ServiceBookPage';
 import ServicesPage from './pages/ServicesPage';
 import OrdersPage from './pages/OrdersPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 import NewOrderPage from './pages/NewOrderPage';
 
 // Protected route wrapper
@@ -53,6 +54,10 @@ export default function App() {
         <Route
           path="/orders/new"
           element={<Protected><NewOrderPage /></Protected>}
+        />
+        <Route
+          path="/orders/:id"
+          element={<Protected><OrderDetailPage /></Protected>}
         />
         <Route
           path="/services/my"

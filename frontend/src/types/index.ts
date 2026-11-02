@@ -96,6 +96,31 @@ export interface Order {
   counterparty_name?: string;
 }
 
+export type OfferStatus = 'pending' | 'accepted' | 'declined';
+
+export interface OrderOffer {
+  id: string;
+  order_id: string;
+  master_id: string;
+  price: number;
+  comment?: string;
+  status: OfferStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderOfferWithMaster extends OrderOffer {
+  master_name?: string;
+  master_company?: string;
+  master_rating?: number;
+  master_review_count?: number;
+}
+
+export interface CreateOfferRequest {
+  price: number;
+  comment?: string;
+}
+
 export interface ServiceBookEntry {
   id: string;
   vehicle_id: string;

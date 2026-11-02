@@ -1,3 +1,4 @@
+pub mod offer;
 pub mod order;
 pub mod service;
 pub mod service_book;

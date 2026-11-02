@@ -1,12 +1,15 @@
 import api from './client';
 import type {
   AuthResponse,
+  CreateOfferRequest,
   CreateOrderRequest,
   CreateServiceRequest,
   CreateServiceBookEntryRequest,
   CreateVehicleRequest,
   LoginRequest,
   Order,
+  OrderOffer,
+  OrderOfferWithMaster,
   RegisterRequest,
   Reminder,
   Service,
@@ -60,10 +63,22 @@ export const ordersApi = {
   get: (id: string) => api.get<Order>(`/orders/${id}`).then((r) => r.data),
   create: (data: CreateOrderRequest) =>
     api.post<Order>('/orders', data).then((r) => r.data),
-  updateStatus: (id: string, status: string, price_agreed?: number) =>
-    api.put<Order>(`/orders/${id}/status`, { status, price_agreed }).then((r) => r.data),
+  updateStatus: (id: string, status: string) =>
+    api.put<Order>(`/orders/${id}/status`, { status }).then((r) => r.data),
   rate: (id: string, rating: number, review?: string) =>
     api.post<Order>(`/orders/${id}/rate`, { rating, review }).then((r) => r.data),
+};
+
+// ── Order Offers (bidding) ──
+export const offersApi = {
+  list: (orderId: string) =>
+    api.get<OrderOfferWithMaster[]>(`/orders/${orderId}/offers`).then((r) => r.data),
+  create: (orderId: string, data: CreateOfferRequest) =>
+    api.post<OrderOffer>(`/orders/${orderId}/offers`, data).then((r) => r.data),
+  accept: (orderId: string, offerId: string) =>
+    api.put<OrderOffer>(`/orders/${orderId}/offers/${offerId}/accept`).then((r) => r.data),
+  decline: (orderId: string, offerId: string) =>
+    api.put<OrderOffer>(`/orders/${orderId}/offers/${offerId}/decline`).then((r) => r.data),
 };
 
 // ── Service Book ──

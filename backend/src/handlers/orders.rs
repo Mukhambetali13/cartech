@@ -78,14 +78,27 @@ pub async fn get_order(
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
-    let order = sqlx::query_as::<_, Order>(
-        "SELECT * FROM orders WHERE id = $1 AND (client_id = $2 OR master_id = $2)",
-    )
-    .bind(order_id)
-    .bind(user_id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?;
+    // Masters can view any open order or orders assigned to them
+    // Clients can only view their own orders
+    let order = if claims.role == "master" {
+        sqlx::query_as::<_, Order>(
+            "SELECT * FROM orders WHERE id = $1 AND (master_id = $2 OR status = 'open')",
+        )
+        .bind(order_id)
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?
+    } else {
+        sqlx::query_as::<_, Order>(
+            "SELECT * FROM orders WHERE id = $1 AND client_id = $2",
+        )
+        .bind(order_id)
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?
+    };
 
     Ok(Json(order))
 }
@@ -185,36 +198,22 @@ pub async fn update_order_status(
         .await?
         .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?;
 
-    if (claims.role == "client" && order.client_id != user_id)
-        || (claims.role == "master"
-            && order
-                .master_id
-                .is_some_and(|master_id| master_id != user_id))
-    {
-        return Err(AppError::Forbidden(
-            "You are not allowed to update this order".to_string(),
-        ));
-    }
-    if claims.role == "master"
-        && order.master_id.is_none()
-        && !(order.status == "open" && req.status == "accepted")
-    {
-        return Err(AppError::Forbidden(
-            "Accept an open request before changing its status".to_string(),
-        ));
-    }
-
     // Validate allowed status transitions
+    // NOTE: master can no longer directly "accept" an order — that is handled
+    //       through the /offers endpoint (price offer system).
     let valid_transition = match (
         claims.role.as_str(),
         order.status.as_str(),
         req.status.as_str(),
     ) {
-        ("master", "open", "accepted") => true,
-        ("master", "accepted", "in_progress") => true,
-        ("master", "in_progress", "completed") => true,
-        ("client", _, "cancelled") => true,
-        ("master", _, "cancelled") => true,
+        // Master: move their accepted order through the workflow
+        ("master", "accepted", "in_progress") => order.master_id == Some(user_id),
+        ("master", "in_progress", "completed") => order.master_id == Some(user_id),
+        ("master", _, "cancelled") => order.master_id == Some(user_id),
+        // Client: cancel their own order at any non-terminal stage
+        ("client", "open", "cancelled") => order.client_id == user_id,
+        ("client", "accepted", "cancelled") => order.client_id == user_id,
+        ("client", "in_progress", "cancelled") => order.client_id == user_id,
         _ => false,
     };
 
@@ -225,35 +224,13 @@ pub async fn update_order_status(
         )));
     }
 
-    let updated_order = if claims.role == "master"
-        && order.status == "open"
-        && req.status == "accepted"
-    {
-        // Master accepts the order
-        sqlx::query_as::<_, Order>(
-            r#"UPDATE orders SET
-               status = $1, master_id = $2, price_agreed = $3, updated_at = NOW()
-               WHERE id = $4 AND status = 'open' AND (master_id IS NULL OR master_id = $2)
-               RETURNING *"#,
-        )
-        .bind(&req.status)
-        .bind(user_id)
-        .bind(req.price_agreed)
-        .bind(order_id)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or_else(|| AppError::Conflict("This request is no longer available".to_string()))?
-    } else {
-        sqlx::query_as::<_, Order>(
-                "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 AND (client_id = $3 OR master_id = $3) RETURNING *",
-            )
-            .bind(&req.status)
-            .bind(order_id)
-            .bind(user_id)
-            .fetch_optional(&state.db)
-            .await?
-            .ok_or_else(|| AppError::Conflict("The order has changed; refresh and try again".to_string()))?
-    };
+    let updated_order = sqlx::query_as::<_, Order>(
+        "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+    )
+    .bind(&req.status)
+    .bind(order_id)
+    .fetch_one(&state.db)
+    .await?;
 
     Ok(Json(updated_order))
 }

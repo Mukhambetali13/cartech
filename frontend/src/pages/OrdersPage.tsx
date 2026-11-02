@@ -49,15 +49,6 @@ export default function OrdersPage() {
 
   useEffect(() => { void fetchOrders(); }, [fetchOrders]);
 
-  const handleAccept = async (orderId: string) => {
-    try {
-      await ordersApi.updateStatus(orderId, 'accepted');
-      fetchOrders();
-    } catch {
-      alert('Не удалось принять заявку');
-    }
-  };
-
   const handleUpdateStatus = async (orderId: string, status: string) => {
     try {
       await ordersApi.updateStatus(orderId, status);
@@ -72,7 +63,7 @@ export default function OrdersPage() {
       <div className="container">
         <div className="section-header" style={{ marginBottom: 'var(--spacing-lg)' }}>
           <h1>
-            {user?.role === 'master' ? 'Заявки' : 'Мои заявки'}
+            {user?.role === 'master' ? 'Заявки клиентов' : 'Мои заявки'}
           </h1>
           {user?.role === 'client' && (
             <Link to="/orders/new" className="btn btn-primary">
@@ -134,6 +125,9 @@ export default function OrdersPage() {
                 <Link to="/orders/new" className="btn btn-primary">Создать заявку</Link>
               </>
             )}
+            {user?.role === 'master' && (
+              <p>Активных заявок пока нет. Появятся — вы увидите их здесь.</p>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
@@ -166,8 +160,9 @@ export default function OrdersPage() {
                     {order.price_agreed && (
                       <span className="price">{Number(order.price_agreed).toLocaleString()} ₽</span>
                     )}
+                    {/* Master on open orders → prompt to make a price offer */}
                     <Link to={`/orders/${order.id}`} className="btn btn-ghost btn-sm">
-                      Детали
+                      {user?.role === 'master' && order.status === 'open' ? '💰 Предложить цену' : 'Детали'}
                     </Link>
                   </div>
                 </div>
@@ -184,16 +179,8 @@ export default function OrdersPage() {
                   </div>
                 )}
 
-                {/* Master actions */}
-                {user?.role === 'master' && order.status === 'open' && (
-                  <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', gap: 'var(--spacing-sm)' }}>
-                    <button className="btn btn-primary btn-sm" onClick={() => handleAccept(order.id)}>
-                      ✅ Принять заявку
-                    </button>
-                  </div>
-                )}
-
-                {user?.role === 'master' && order.status === 'accepted' && (
+                {/* Master: workflow actions for their assigned orders */}
+                {user?.role === 'master' && order.status === 'accepted' && order.master_id === user?.id && (
                   <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', gap: 'var(--spacing-sm)' }}>
                     <button className="btn btn-primary btn-sm" onClick={() => handleUpdateStatus(order.id, 'in_progress')}>
                       🔧 Начать работу
@@ -201,7 +188,7 @@ export default function OrdersPage() {
                   </div>
                 )}
 
-                {user?.role === 'master' && order.status === 'in_progress' && (
+                {user?.role === 'master' && order.status === 'in_progress' && order.master_id === user?.id && (
                   <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', gap: 'var(--spacing-sm)' }}>
                     <button className="btn btn-primary btn-sm" onClick={() => handleUpdateStatus(order.id, 'completed')}>
                       ✅ Завершить
