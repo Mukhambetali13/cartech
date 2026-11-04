@@ -41,12 +41,23 @@ pub struct OrderVehicleInfo {
     pub vehicle_mileage: Option<i32>,
 }
 
+/// Extra fields computed per viewer: Kazakh title of the category and,
+/// for masters, the distance from their last known location.
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct OrderViewerInfo {
+    pub title_kk: Option<String>,
+    pub distance_km: Option<f64>,
+}
+
 #[derive(Debug, Clone, Serialize, FromRow)]
 pub struct OrderListItem {
     #[sqlx(flatten)]
     #[serde(flatten)]
     pub order: Order,
     pub counterparty_name: Option<String>,
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub viewer: OrderViewerInfo,
     #[sqlx(flatten)]
     #[serde(flatten)]
     pub vehicle: OrderVehicleInfo,
@@ -57,6 +68,9 @@ pub struct OrderDetail {
     #[sqlx(flatten)]
     #[serde(flatten)]
     pub order: Order,
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub viewer: OrderViewerInfo,
     #[sqlx(flatten)]
     #[serde(flatten)]
     pub vehicle: OrderVehicleInfo,

@@ -4,6 +4,10 @@ use axum::{
 };
 
 use crate::handlers::{
+    account::{
+        account_deletion_page, delete_account, delete_push_token, privacy_page,
+        register_push_token, update_location,
+    },
     auth::{login, me, register, AppState},
     offers::{accept_offer, create_offer, decline_offer, list_offers},
     orders::{create_order, get_order, list_orders, rate_order, update_order_status},
@@ -20,7 +24,9 @@ pub fn create_router(state: AppState) -> Router {
         // Auth routes (public)
         .route("/auth/register", post(register))
         .route("/auth/login", post(login))
-        .route("/auth/me", get(me))
+        .route("/auth/me", get(me).delete(delete_account))
+        .route("/auth/me/location", put(update_location))
+        .route("/push-tokens", post(register_push_token).delete(delete_push_token))
         // Vehicles (protected)
         .route("/vehicles", get(list_vehicles).post(create_vehicle))
         .route(
@@ -56,6 +62,11 @@ pub fn create_router(state: AppState) -> Router {
         .route("/orders/:id/offers/:offer_id/accept", put(accept_offer))
         .route("/orders/:id/offers/:offer_id/decline", put(decline_offer));
 
-    Router::new().nest("/api", api).with_state(state)
+    Router::new()
+        .nest("/api", api)
+        // Public pages linked from Google Play
+        .route("/privacy", get(privacy_page))
+        .route("/account-deletion", get(account_deletion_page))
+        .with_state(state)
 }
 

@@ -6,6 +6,7 @@ import { serviceBookApi, vehiclesApi } from '../../src/api';
 import { useAuthStore } from '../../src/store/authStore';
 import { Page, SectionCard, styles } from '../../src/components/ui';
 import { reminderColors, upcomingText, upcomingWorks, type UpcomingWork } from '../../src/maintenance';
+import { useT } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
 interface DueWork extends UpcomingWork {
@@ -25,8 +26,8 @@ async function loadDueWorks(): Promise<DueWork[]> {
 
 export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
+  const t = useT();
   const [dueWorks, setDueWorks] = useState<DueWork[]>([]);
   const isClient = user?.role === 'client';
 
@@ -37,23 +38,18 @@ export default function HomeScreen() {
     }, [isClient]),
   );
 
-  const signOut = async () => {
-    await logout();
-    router.replace('/(auth)/login');
-  };
-
   return (
     <Page>
       <View style={styles.homeHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.eyebrow}>AUTOMARKET</Text>
-          <Text style={styles.pageTitle}>Здравствуйте, {user?.full_name || 'водитель'}!</Text>
+          <Text style={styles.pageTitle}>{t('home.greeting', { name: user?.full_name || t('home.driver') })}</Text>
           <Text style={styles.mutedText}>
-            {user?.role === 'master' ? 'Кабинет мастера' : 'Ваш помощник для автомобиля'}
+            {user?.role === 'master' ? t('home.masterCabinet') : t('home.clientSubtitle')}
           </Text>
         </View>
-        <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Выйти</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/settings')} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>{t('home.settings')}</Text>
         </Pressable>
       </View>
 
@@ -72,7 +68,7 @@ export default function HomeScreen() {
                 }}
               >
                 <Text style={[styles.cardTitle, { color: reminderColors[item.status].text }]}>
-                  {item.status === 'overdue' ? '⚠️ Пора: ' : '⏰ Скоро: '}
+                  {item.status === 'overdue' ? t('home.dueNow') : t('home.dueSoon')}
                   {item.work.label.toLowerCase()}
                 </Text>
                 <Text style={styles.cardDescription}>
@@ -86,14 +82,14 @@ export default function HomeScreen() {
 
       <SectionCard style={styles.heroCard}>
         <Text style={styles.heroIcon}>🛠️</Text>
-        <Text style={styles.heroTitle}>Нужна помощь с авто?</Text>
-        <Text style={styles.heroDescription}>Найдите мастера или выберите услугу рядом с вами.</Text>
+        <Text style={styles.heroTitle}>{t('home.heroTitle')}</Text>
+        <Text style={styles.heroDescription}>{t('home.heroDescription')}</Text>
         <Pressable
           accessibilityRole="button"
           style={styles.sosButton}
           onPress={() => router.push('/sos')}
         >
-          <Text style={styles.sosButtonText}>🆘 Срочная помощь SOS</Text>
+          <Text style={styles.sosButtonText}>{t('home.sos')}</Text>
         </Pressable>
         {isClient ? (
           <Pressable
@@ -101,7 +97,7 @@ export default function HomeScreen() {
             style={[styles.primaryButton, { marginTop: 10 }]}
             onPress={() => router.push('/planned')}
           >
-            <Text style={styles.primaryButtonText}>📋 Плановое ТО и ремонт</Text>
+            <Text style={styles.primaryButtonText}>{t('home.planned')}</Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -109,17 +105,17 @@ export default function HomeScreen() {
           style={[styles.secondaryButton, { marginTop: 10, alignItems: 'center' }]}
           onPress={() => router.push('/(tabs)/services')}
         >
-          <Text style={styles.secondaryButtonText}>Все услуги</Text>
+          <Text style={styles.secondaryButtonText}>{t('home.allServices')}</Text>
         </Pressable>
       </SectionCard>
 
-      <Text style={styles.sectionTitle}>Быстрый доступ</Text>
+      <Text style={styles.sectionTitle}>{t('home.quickAccess')}</Text>
       <View style={styles.shortcutGrid}>
-        <Shortcut label="Мои автомобили" icon="🚙" onPress={() => router.push('/(tabs)/vehicles')} />
-        <Shortcut label="Мои заказы" icon="📋" onPress={() => router.push('/(tabs)/orders')} />
+        <Shortcut label={t('home.myVehicles')} icon="🚙" onPress={() => router.push('/(tabs)/vehicles')} />
+        <Shortcut label={t('home.myOrders')} icon="📋" onPress={() => router.push('/(tabs)/orders')} />
       </View>
       <Text style={[styles.mutedText, { marginTop: 24, color: colors.muted }]}>
-        Данные загружаются с вашего аккаунта AutoMarket.
+        {t('home.footer')}
       </Text>
     </Page>
   );

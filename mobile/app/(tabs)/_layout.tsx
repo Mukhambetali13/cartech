@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 import { Text } from 'react-native';
 import { useAuthStore } from '../../src/store/authStore';
+import { useT } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
 const tabIcons: Record<string, string> = {
@@ -13,6 +14,7 @@ const tabIcons: Record<string, string> = {
 export default function TabsLayout() {
   const initialized = useAuthStore((state) => state.initialized);
   const user = useAuthStore((state) => state.user);
+  const t = useT();
 
   if (!initialized) return null;
   if (!user) return <Redirect href="/(auth)/login" />;
@@ -30,10 +32,10 @@ export default function TabsLayout() {
         ),
       })}
     >
-      <Tabs.Screen name="index" options={{ title: 'Главная' }} />
-      <Tabs.Screen name="services" options={{ title: 'Услуги' }} />
-      <Tabs.Screen name="vehicles" options={{ title: 'Авто' }} />
-      <Tabs.Screen name="orders" options={{ title: 'Заказы' }} />
+      <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
+      <Tabs.Screen name="services" options={{ title: t('tabs.services') }} />
+      <Tabs.Screen name="vehicles" options={{ title: t('tabs.vehicles') }} />
+      <Tabs.Screen name="orders" options={{ title: t('tabs.orders') }} />
     </Tabs>
   );
 }

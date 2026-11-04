@@ -14,6 +14,8 @@ import type { UserRole } from '@shared/types/index';
 import { apiErrorMessage } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { AuthCard, Field, styles } from '../../src/components/ui';
+import { LanguageSwitch } from '../../src/components/LanguageSwitch';
+import { useT } from '../../src/i18n';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -25,11 +27,12 @@ export default function RegisterScreen() {
   const register = useAuthStore((state) => state.register);
   const isLoading = useAuthStore((state) => state.isLoading);
   const router = useRouter();
+  const t = useT();
 
   const submit = async () => {
     setError('');
     if (password.length < 6) {
-      setError('Пароль должен быть не менее 6 символов.');
+      setError(t('auth.passwordTooShort'));
       return;
     }
     try {
@@ -42,7 +45,7 @@ export default function RegisterScreen() {
       });
       router.replace('/(tabs)');
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось создать аккаунт.'));
+      setError(apiErrorMessage(cause, t('auth.registerFailed')));
     }
   };
 
@@ -52,7 +55,8 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.authScroll} keyboardShouldPersistTaps="handled">
-        <AuthCard title="Создать аккаунт" subtitle="Присоединяйтесь к AutoMarket">
+        <LanguageSwitch style={{ alignSelf: 'center', marginBottom: 14 }} />
+        <AuthCard title={t('auth.createAccount')} subtitle={t('auth.registerSubtitle')}>
           <View style={styles.roleRow}>
             {(['client', 'master'] as const).map((item) => (
               <Pressable
@@ -63,17 +67,17 @@ export default function RegisterScreen() {
                 onPress={() => setRole(item)}
               >
                 <Text style={[styles.roleText, role === item && styles.roleTextActive]}>
-                  {item === 'client' ? '🚗 Клиент' : '🔧 Мастер / СТО'}
+                  {item === 'client' ? t('auth.roleClient') : t('auth.roleMaster')}
                 </Text>
               </Pressable>
             ))}
           </View>
-          <Field label="Имя / Название компании">
+          <Field label={t('auth.name')}>
             <TextInput
               style={styles.input}
               value={fullName}
               onChangeText={setFullName}
-              placeholder={role === 'master' ? 'Имя или название СТО' : 'Иван Иванов'}
+              placeholder={role === 'master' ? t('auth.namePlaceholderMaster') : t('auth.namePlaceholderClient')}
               autoComplete="name"
             />
           </Field>
@@ -88,21 +92,21 @@ export default function RegisterScreen() {
               autoComplete="email"
             />
           </Field>
-          <Field label="Телефон (необязательно)">
+          <Field label={t('auth.phoneOptional')}>
             <TextInput
               style={styles.input}
               value={phone}
               onChangeText={setPhone}
-              placeholder="+7 900 000 00 00"
+              placeholder="+7 700 000 00 00"
               keyboardType="phone-pad"
             />
           </Field>
-          <Field label="Пароль">
+          <Field label={t('auth.password')}>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Не менее 6 символов"
+              placeholder={t('auth.passwordNew')}
               secureTextEntry
               autoComplete="new-password"
             />
@@ -117,12 +121,12 @@ export default function RegisterScreen() {
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.primaryButtonText}>Создать аккаунт</Text>
+              <Text style={styles.primaryButtonText}>{t('auth.createAccount')}</Text>
             )}
           </Pressable>
           <View style={styles.authFooter}>
-            <Text style={styles.mutedText}>Уже есть аккаунт? </Text>
-            <Link href="/(auth)/login" style={styles.link}>Войти</Link>
+            <Text style={styles.mutedText}>{t('auth.haveAccount')}</Text>
+            <Link href="/(auth)/login" style={styles.link}>{t('auth.signIn')}</Link>
           </View>
         </AuthCard>
       </ScrollView>

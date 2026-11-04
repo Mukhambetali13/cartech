@@ -109,7 +109,8 @@ pub async fn me(State(state): State<AppState>, claims: Claims) -> AppResult<Json
         .bind(user_id)
         .fetch_optional(&state.db)
         .await?
-        .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
+        // Deleted or blocked: the app treats 401 as "sign out"
+        .ok_or_else(|| AppError::Unauthorized("User not found".to_string()))?;
 
     Ok(Json(UserPublic::from(user)))
 }

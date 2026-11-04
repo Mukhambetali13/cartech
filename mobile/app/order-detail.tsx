@@ -4,6 +4,7 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -14,28 +15,17 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MAX_OFFER_MARKUP, type Order, type OrderOfferWithMaster } from '@shared/types/index';
+import type { Order, OrderOfferWithMaster } from '@shared/types/index';
+import { MAX_OFFER_MARKUP } from '../src/pricing';
 import { apiErrorMessage, offersApi, ordersApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { SectionCard, styles as ui } from '../src/components/ui';
 import { colors } from '../src/theme';
 import { formatDate, formatKm, vehicleSummary } from '../src/maintenance';
+import { localized, NUMBER_LOCALE, useLanguage, useT } from '../src/i18n';
+import { mapUrl } from '../src/location';
 
-const money = (value: number) => `${value.toLocaleString('ru-RU')} ₸`;
-
-const statusLabel: Record<string, string> = {
-  open: 'Открыта',
-  accepted: 'Принята',
-  in_progress: 'В работе',
-  completed: 'Завершена',
-  cancelled: 'Отменена',
-};
-
-const offerStatusLabel: Record<string, string> = {
-  pending: 'Ожидает',
-  accepted: '✅ Принято',
-  declined: '✕ Отклонено',
-};
+const money = (value: number) => `${value.toLocaleString(NUMBER_LOCALE)} ₸`;
 
 function Stars({ value }: { value?: number | null }) {
   if (!value) return null;
@@ -53,6 +43,8 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const insets = useSafeAreaInsets();
+  const t = useT();
+  const language = useLanguage();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [offers, setOffers] = useState<OrderOfferWithMaster[]>([]);
@@ -78,11 +70,11 @@ export default function OrderDetailScreen() {
       setOrder(o);
       setOffers(ofs);
     } catch (e) {
-      setError(apiErrorMessage(e, 'Не удалось загрузить данные'));
+      setError(apiErrorMessage(e, t('detail.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -93,11 +85,11 @@ export default function OrderDetailScreen() {
     Keyboard.dismiss();
     const price = fixedPrice ?? parseFloat(offerPrice.replace(/\s/g, '').replace(',', '.'));
     if (isNaN(price) || price <= 0) {
-      setOfferError('Введите сумму больше нуля');
+      setOfferError(t('offer.amountRequired'));
       return;
     }
     if (clientPrice != null && maxOfferPrice != null && (price < clientPrice || price > maxOfferPrice)) {
-      setOfferError(`Цена должна быть от ${money(clientPrice)} до ${money(maxOfferPrice)}`);
+      setOfferError(t('offer.range', { min: money(clientPrice), max: money(maxOfferPrice) }));
       return;
     }
     setOfferSubmitting(true);
@@ -112,24 +104,24 @@ export default function OrderDetailScreen() {
       setOfferComment('');
       await load();
     } catch (e) {
-      setOfferError(apiErrorMessage(e, 'Не удалось отправить предложение'));
+      setOfferError(apiErrorMessage(e, t('offer.sendFailed')));
     } finally {
       setOfferSubmitting(false);
     }
   };
 
   const acceptOffer = async (offerId: string) => {
-    Alert.alert('Принять предложение?', 'Вы выберете этого мастера и заявка будет передана ему.', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('offer.acceptTitle'), t('offer.acceptBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Принять',
+        text: t('offer.accept'),
         style: 'default',
         onPress: async () => {
           try {
             await offersApi.accept(id!, offerId);
             await load();
           } catch (e) {
-            Alert.alert('Ошибка', apiErrorMessage(e, 'Не удалось принять предложение'));
+            Alert.alert(t('common.error'), apiErrorMessage(e, t('offer.acceptFailed')));
           }
         },
       },
@@ -141,7 +133,7 @@ export default function OrderDetailScreen() {
       await offersApi.decline(id!, offerId);
       await load();
     } catch (e) {
-      Alert.alert('Ошибка', apiErrorMessage(e, 'Не удалось отклонить предложение'));
+      Alert.alert(t('common.error'), apiErrorMessage(e, t('offer.declineFailed')));
     }
   };
 
@@ -151,7 +143,7 @@ export default function OrderDetailScreen() {
       await ordersApi.updateStatus(id!, status);
       await load();
     } catch (e) {
-      Alert.alert('Ошибка', apiErrorMessage(e, 'Не удалось изменить статус'));
+      Alert.alert(t('common.error'), apiErrorMessage(e, t('detail.statusFailed')));
     } finally {
       setStatusUpdating(false);
     }
@@ -178,9 +170,9 @@ export default function OrderDetailScreen() {
     return (
       <View style={[s.page, { padding: 24, paddingTop: 24 + insets.top }]}>
         <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-          <Text style={{ color: colors.primary, fontWeight: '700' }}>← Назад</Text>
+          <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={{ color: colors.error, fontSize: 15 }}>{error || 'Заявка не найдена'}</Text>
+        <Text style={{ color: colors.error, fontSize: 15 }}>{error || t('detail.notFound')}</Text>
       </View>
     );
   }
@@ -190,19 +182,19 @@ export default function OrderDetailScreen() {
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingTop: 20 + insets.top, paddingBottom: 40 }}>
         {/* Back */}
         <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>← Назад</Text>
+          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{t('common.back')}</Text>
         </Pressable>
 
         {/* ── Order card ── */}
         <SectionCard style={{ marginBottom: 16 }}>
           <View style={[ui.rowBetween, { marginBottom: 8 }]}>
-            <Text style={[ui.cardTitle, { flex: 1 }]}>{order.title}</Text>
+            <Text style={[ui.cardTitle, { flex: 1 }]}>{localized(language, order.title, order.title_kk)}</Text>
             <Text style={[ui.badge, statusBadgeStyle(order.status)]}>
-              {statusLabel[order.status]}
+              {t(`order.status.${order.status}`)}
             </Text>
           </View>
           <Text style={[ui.mutedText, { marginBottom: 4 }]}>
-            {order.service_type === 'sos' ? '🆘 Срочная помощь' : '📋 Плановое ТО'}
+            {order.service_type === 'sos' ? t('order.typeSos') : t('order.typePlanned')}
           </Text>
           {order.description ? (
             <Text style={[ui.cardDescription, { marginTop: 6 }]}>{order.description}</Text>
@@ -210,27 +202,41 @@ export default function OrderDetailScreen() {
           {order.address ? (
             <Text style={[ui.mutedText, { marginTop: 6 }]}>📍 {order.address}</Text>
           ) : null}
+          {order.distance_km != null ? (
+            <Text style={[ui.mutedText, { marginTop: 4, fontWeight: '700', color: colors.primaryDark }]}>
+              {t('order.distance', { km: order.distance_km.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 }) })}
+            </Text>
+          ) : null}
+          {order.latitude != null && order.longitude != null ? (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL(mapUrl(order.latitude!, order.longitude!))}
+              style={{ marginTop: 6, alignSelf: 'flex-start' }}
+            >
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('detail.openMap')}</Text>
+            </Pressable>
+          ) : null}
           {order.scheduled_at ? (
-            <Text style={[ui.mutedText, { marginTop: 6 }]}>📅 Желаемая дата: {formatDate(order.scheduled_at)}</Text>
+            <Text style={[ui.mutedText, { marginTop: 6 }]}>{t('order.preferredDate', { date: formatDate(order.scheduled_at) })}</Text>
           ) : null}
           {order.price_agreed != null ? (
             <Text style={[ui.price, { marginTop: 10 }]}>
-              {Number(order.price_agreed).toLocaleString('ru-RU')} ₸  — согласованная цена
+              {t('detail.agreedPrice', { price: money(Number(order.price_agreed)) })}
             </Text>
           ) : clientPrice != null ? (
             <Text style={[ui.price, { marginTop: 10 }]}>
-              {money(clientPrice)}  — {isClient ? 'ваша цена' : 'цена клиента'}
+              {t(isClient ? 'detail.yourPrice' : 'detail.clientPrice', { price: money(clientPrice) })}
             </Text>
           ) : null}
           <Text style={[ui.mutedText, { marginTop: 8, fontSize: 12 }]}>
-            {new Date(order.created_at).toLocaleString('ru-RU')}
+            {new Date(order.created_at).toLocaleString(NUMBER_LOCALE)}
           </Text>
         </SectionCard>
 
         {/* ── Vehicle ── */}
         {order.vehicle_make ? (
           <SectionCard style={{ marginBottom: 16 }}>
-            <Text style={s.sectionHead}>🚗 Автомобиль клиента</Text>
+            <Text style={s.sectionHead}>{t('detail.clientVehicle')}</Text>
             <Text style={ui.cardTitle}>
               {vehicleSummary({ make: order.vehicle_make, model: order.vehicle_model, year: order.vehicle_year }).title}
             </Text>
@@ -243,7 +249,7 @@ export default function OrderDetailScreen() {
               return details ? <Text style={ui.cardDescription}>{details}</Text> : null;
             })()}
             {order.vehicle_mileage != null ? (
-              <Text style={ui.cardDescription}>Пробег: {formatKm(order.vehicle_mileage)}</Text>
+              <Text style={ui.cardDescription}>{t('vehicles.mileage', { km: formatKm(order.vehicle_mileage) })}</Text>
             ) : null}
           </SectionCard>
         ) : null}
@@ -251,25 +257,25 @@ export default function OrderDetailScreen() {
         {/* ── Master: status actions ── */}
         {isMaster && order.status === 'accepted' && order.master_id === user?.id && (
           <SectionCard style={{ marginBottom: 16 }}>
-            <Text style={s.sectionHead}>Управление заявкой</Text>
+            <Text style={s.sectionHead}>{t('detail.manage')}</Text>
             <Pressable
               style={[ui.primaryButton, { marginTop: 0 }]}
               disabled={statusUpdating}
               onPress={() => updateStatus('in_progress')}
             >
-              <Text style={ui.primaryButtonText}>🔧 Начать работу</Text>
+              <Text style={ui.primaryButtonText}>{t('detail.start')}</Text>
             </Pressable>
           </SectionCard>
         )}
         {isMaster && order.status === 'in_progress' && order.master_id === user?.id && (
           <SectionCard style={{ marginBottom: 16 }}>
-            <Text style={s.sectionHead}>Управление заявкой</Text>
+            <Text style={s.sectionHead}>{t('detail.manage')}</Text>
             <Pressable
               style={[ui.primaryButton, { marginTop: 0 }]}
               disabled={statusUpdating}
               onPress={() => updateStatus('completed')}
             >
-              <Text style={ui.primaryButtonText}>✅ Завершить работу</Text>
+              <Text style={ui.primaryButtonText}>{t('detail.finish')}</Text>
             </Pressable>
           </SectionCard>
         )}
@@ -281,13 +287,13 @@ export default function OrderDetailScreen() {
               style={s.cancelButton}
               disabled={statusUpdating}
               onPress={() =>
-                Alert.alert('Отменить заявку?', 'Это действие нельзя отменить.', [
-                  { text: 'Нет', style: 'cancel' },
-                  { text: 'Да, отменить', style: 'destructive', onPress: () => updateStatus('cancelled') },
+                Alert.alert(t('detail.cancelTitle'), t('detail.cancelBody'), [
+                  { text: t('common.no'), style: 'cancel' },
+                  { text: t('detail.cancelConfirm'), style: 'destructive', onPress: () => updateStatus('cancelled') },
                 ])
               }
             >
-              <Text style={s.cancelButtonText}>✕ Отменить заявку</Text>
+              <Text style={s.cancelButtonText}>{t('detail.cancel')}</Text>
             </Pressable>
           </SectionCard>
         )}
@@ -296,14 +302,14 @@ export default function OrderDetailScreen() {
         {isMaster && isOpen && (
           <SectionCard style={{ marginBottom: 16 }}>
             <Text style={s.sectionHead}>
-              {myOffer ? '✏️ Обновить предложение' : '💰 Предложить цену'}
+              {myOffer ? t('offer.updateTitle') : t('offer.makeTitle')}
             </Text>
 
             {myOffer && (
               <View style={s.currentOffer}>
-                <Text style={s.currentOfferLabel}>Ваше текущее предложение:</Text>
+                <Text style={s.currentOfferLabel}>{t('offer.current')}</Text>
                 <Text style={[ui.price, { marginTop: 0 }]}>
-                  {Number(myOffer.price).toLocaleString('ru-RU')} ₸
+                  {Number(myOffer.price).toLocaleString(NUMBER_LOCALE)} ₸
                 </Text>
                 {myOffer.comment ? (
                   <Text style={ui.mutedText}>{myOffer.comment}</Text>
@@ -312,29 +318,29 @@ export default function OrderDetailScreen() {
             )}
 
             {offerSent && !myOffer && (
-              <Text style={s.successText}>✅ Предложение отправлено! Ожидайте ответа клиента.</Text>
+              <Text style={s.successText}>{t('offer.sent')}</Text>
             )}
 
             {clientPrice != null && maxOfferPrice != null && (
               <>
                 <Text style={[ui.mutedText, { marginBottom: 10 }]}>
-                  Клиент предлагает {money(clientPrice)}. Согласитесь или назовите свою цену — до {money(maxOfferPrice)}.
+                  {t('offer.clientOffers', { price: money(clientPrice), max: money(maxOfferPrice) })}
                 </Text>
                 <Pressable
                   style={[ui.primaryButton, { marginTop: 0, marginBottom: 14 }, offerSubmitting && ui.disabledButton]}
                   disabled={offerSubmitting}
                   onPress={() => void submitOffer(clientPrice)}
                 >
-                  <Text style={ui.primaryButtonText}>🤝 Согласиться на {money(clientPrice)}</Text>
+                  <Text style={ui.primaryButtonText}>{t('offer.agree', { price: money(clientPrice) })}</Text>
                 </Pressable>
               </>
             )}
 
-            <Text style={s.fieldLabel}>{clientPrice != null ? 'Своя цена (₸)' : 'Цена (₸) *'}</Text>
+            <Text style={s.fieldLabel}>{clientPrice != null ? t('offer.ownPrice') : t('offer.price')}</Text>
             <TextInput
               ref={priceRef}
               style={ui.input}
-              placeholder={maxOfferPrice != null ? `До ${money(maxOfferPrice)}` : 'Например: 2500'}
+              placeholder={maxOfferPrice != null ? t('offer.upTo', { price: money(maxOfferPrice) }) : t('offer.pricePlaceholder')}
               placeholderTextColor={colors.muted}
               keyboardType="numeric"
               value={offerPrice}
@@ -343,10 +349,10 @@ export default function OrderDetailScreen() {
               onSubmitEditing={() => {}}
             />
 
-            <Text style={[s.fieldLabel, { marginTop: 12 }]}>Комментарий (необязательно)</Text>
+            <Text style={[s.fieldLabel, { marginTop: 12 }]}>{t('offer.commentOptional')}</Text>
             <TextInput
               style={[ui.input, { minHeight: 72, textAlignVertical: 'top', paddingTop: 12 }]}
-              placeholder="Что входит в стоимость, сроки..."
+              placeholder={t('offer.commentPlaceholder')}
               placeholderTextColor={colors.muted}
               multiline
               value={offerComment}
@@ -361,7 +367,7 @@ export default function OrderDetailScreen() {
               onPress={() => void submitOffer()}
             >
               <Text style={ui.primaryButtonText}>
-                {offerSubmitting ? 'Отправка...' : myOffer ? '🔄 Обновить' : '📤 Отправить предложение'}
+                {offerSubmitting ? t('offer.sending') : myOffer ? t('offer.update') : t('offer.send')}
               </Text>
             </Pressable>
           </SectionCard>
@@ -370,12 +376,12 @@ export default function OrderDetailScreen() {
         {/* ── Master: my offer status (closed order) ── */}
         {isMaster && !isOpen && myOffer && (
           <SectionCard style={{ marginBottom: 16 }}>
-            <Text style={s.sectionHead}>Моё предложение</Text>
+            <Text style={s.sectionHead}>{t('offer.mine')}</Text>
             <View style={ui.rowBetween}>
               <Text style={[ui.badge, offerBadgeStyle(myOffer.status)]}>
-                {offerStatusLabel[myOffer.status]}
+                {t(`offer.status.${myOffer.status}`)}
               </Text>
-              <Text style={ui.price}>{Number(myOffer.price).toLocaleString('ru-RU')} ₸</Text>
+              <Text style={ui.price}>{Number(myOffer.price).toLocaleString(NUMBER_LOCALE)} ₸</Text>
             </View>
             {myOffer.comment ? <Text style={[ui.mutedText, { marginTop: 6 }]}>{myOffer.comment}</Text> : null}
           </SectionCard>
@@ -384,17 +390,17 @@ export default function OrderDetailScreen() {
         {/* ── Client: accepted offer pinned ── */}
         {isClient && acceptedOffer && (
           <SectionCard style={[{ marginBottom: 16, borderColor: '#10b981', borderWidth: 2 }]}>
-            <Text style={s.sectionHead}>✅ Выбранный мастер</Text>
+            <Text style={s.sectionHead}>{t('offer.chosenMaster')}</Text>
             <View style={ui.rowBetween}>
               <View style={{ flex: 1 }}>
-                <Text style={ui.cardTitle}>{acceptedOffer.master_name || 'Мастер'}</Text>
+                <Text style={ui.cardTitle}>{acceptedOffer.master_name || t('offer.master')}</Text>
                 {acceptedOffer.master_company ? (
                   <Text style={ui.mutedText}>🏢 {acceptedOffer.master_company}</Text>
                 ) : null}
                 <Stars value={acceptedOffer.master_rating} />
               </View>
               <Text style={[ui.price, { fontSize: 18 }]}>
-                {Number(acceptedOffer.price).toLocaleString('ru-RU')} ₸
+                {Number(acceptedOffer.price).toLocaleString(NUMBER_LOCALE)} ₸
               </Text>
             </View>
             {acceptedOffer.comment ? (
@@ -408,7 +414,7 @@ export default function OrderDetailScreen() {
           <>
             <View style={[ui.rowBetween, { marginBottom: 10 }]}>
               <Text style={s.sectionHead}>
-                Предложения мастеров
+                {t('offer.list')}
               </Text>
               {pendingOffers.length > 0 && (
                 <View style={s.countBadge}>
@@ -422,7 +428,7 @@ export default function OrderDetailScreen() {
                 <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                   <Text style={{ fontSize: 28, marginBottom: 8 }}>⏳</Text>
                   <Text style={[ui.mutedText, { textAlign: 'center' }]}>
-                    Мастера пока не откликнулись. Заявка видна всем мастерам в вашей категории.
+                    {t('offer.none')}
                   </Text>
                 </View>
               </SectionCard>
@@ -432,32 +438,32 @@ export default function OrderDetailScreen() {
               <SectionCard key={offer.id} style={{ marginBottom: 10 }}>
                 <View style={ui.rowBetween}>
                   <View style={{ flex: 1, paddingRight: 8 }}>
-                    <Text style={ui.cardTitle}>{offer.master_name || 'Мастер'}</Text>
+                    <Text style={ui.cardTitle}>{offer.master_name || t('offer.master')}</Text>
                     {offer.master_company ? (
                       <Text style={[ui.mutedText, { marginTop: 2 }]}>🏢 {offer.master_company}</Text>
                     ) : null}
                     <Stars value={offer.master_rating} />
                     {offer.master_review_count != null && offer.master_review_count > 0 && (
                       <Text style={[ui.mutedText, { fontSize: 12 }]}>
-                        {offer.master_review_count} отзывов
+                        {t('offer.reviews', { count: offer.master_review_count })}
                       </Text>
                     )}
                     {offer.comment ? (
                       <Text style={[ui.cardDescription, { marginTop: 6 }]}>💬 {offer.comment}</Text>
                     ) : null}
                     <Text style={[ui.mutedText, { fontSize: 12, marginTop: 6 }]}>
-                      {new Date(offer.created_at).toLocaleString('ru-RU')}
+                      {new Date(offer.created_at).toLocaleString(NUMBER_LOCALE)}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
                     <Text style={[ui.price, { fontSize: 16 }]}>
-                      {Number(offer.price).toLocaleString('ru-RU')} ₸
+                      {money(Number(offer.price))}
                     </Text>
                     {clientPrice != null && (
                       <Text style={[ui.mutedText, { fontSize: 12, marginTop: 2 }]}>
                         {Number(offer.price) > clientPrice
-                          ? `+${money(Number(offer.price) - clientPrice)} к вашей`
-                          : 'по вашей цене'}
+                          ? t('offer.aboveYours', { diff: money(Number(offer.price) - clientPrice) })
+                          : t('offer.atYours')}
                       </Text>
                     )}
                   </View>
@@ -469,13 +475,13 @@ export default function OrderDetailScreen() {
                       style={[s.acceptButton, { flex: 1 }]}
                       onPress={() => void acceptOffer(offer.id)}
                     >
-                      <Text style={s.acceptButtonText}>✅ Принять</Text>
+                      <Text style={s.acceptButtonText}>{t('offer.acceptButton')}</Text>
                     </Pressable>
                     <Pressable
                       style={[s.declineButton, { flex: 1 }]}
                       onPress={() => void declineOffer(offer.id)}
                     >
-                      <Text style={s.declineButtonText}>✕ Отклонить</Text>
+                      <Text style={s.declineButtonText}>{t('offer.declineButton')}</Text>
                     </Pressable>
                   </View>
                 )}
@@ -485,7 +491,7 @@ export default function OrderDetailScreen() {
             {/* Declined offers */}
             {declinedOffers.length > 0 && (
               <Text style={[ui.mutedText, { textAlign: 'center', marginTop: 6, fontSize: 13 }]}>
-                Отклонено предложений: {declinedOffers.length}
+                {t('offer.declinedCount', { count: declinedOffers.length })}
               </Text>
             )}
           </>

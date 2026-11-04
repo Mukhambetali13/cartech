@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     errors::{AppError, AppResult},
+    geo::distance_km_sql,
     handlers::auth::AppState,
     models::{
         order::{
@@ -16,12 +17,24 @@ use crate::{
         },
         user::Claims,
     },
+    push::{notify_order, OrderEvent},
 };
 
 const ORDER_VEHICLE_COLUMNS: &str =
     "v.make AS vehicle_make, v.model AS vehicle_model, v.year AS vehicle_year,
      v.engine_type AS vehicle_engine_type, v.engine_volume AS vehicle_engine_volume,
      v.transmission AS vehicle_transmission, v.current_mileage AS vehicle_mileage";
+
+const ORDER_TITLE_KK: &str =
+    "(SELECT name_kk FROM service_categories WHERE name = o.title LIMIT 1) AS title_kk";
+
+/// Distance from the viewing master (joined as `me`) to the order
+fn order_distance_column() -> String {
+    format!(
+        "{} AS distance_km",
+        distance_km_sql("me.latitude", "me.longitude", "o.latitude", "o.longitude")
+    )
+}
 
 pub async fn list_orders(
     State(state): State<AppState>,
@@ -32,11 +45,13 @@ pub async fn list_orders(
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let mut query = if claims.role == "master" {
+        let distance = order_distance_column();
         format!(
             "SELECT o.*, COALESCE(mp.company_name, client.full_name) AS counterparty_name,
-                {ORDER_VEHICLE_COLUMNS}
+                {ORDER_VEHICLE_COLUMNS}, {ORDER_TITLE_KK}, {distance}
          FROM orders o
          JOIN users client ON client.id = o.client_id
+         LEFT JOIN master_profiles me ON me.user_id = $1
          LEFT JOIN vehicles v ON v.id = o.vehicle_id
          LEFT JOIN users master ON master.id = o.master_id
          LEFT JOIN master_profiles mp ON mp.user_id = master.id
@@ -45,7 +60,7 @@ pub async fn list_orders(
     } else {
         format!(
             "SELECT o.*, COALESCE(mp.company_name, master.full_name) AS counterparty_name,
-                {ORDER_VEHICLE_COLUMNS}
+                {ORDER_VEHICLE_COLUMNS}, {ORDER_TITLE_KK}, NULL::float8 AS distance_km
          FROM orders o
          LEFT JOIN vehicles v ON v.id = o.vehicle_id
          LEFT JOIN users master ON master.id = o.master_id
@@ -91,10 +106,17 @@ pub async fn get_order(
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
+    let distance = if claims.role == "master" {
+        order_distance_column()
+    } else {
+        "NULL::float8 AS distance_km".to_string()
+    };
+    // $2 is always the viewer, so `me` is empty for clients
     let select = format!(
-        "SELECT o.*, {ORDER_VEHICLE_COLUMNS}
+        "SELECT o.*, {ORDER_VEHICLE_COLUMNS}, {ORDER_TITLE_KK}, {distance}
          FROM orders o
-         LEFT JOIN vehicles v ON v.id = o.vehicle_id"
+         LEFT JOIN vehicles v ON v.id = o.vehicle_id
+         LEFT JOIN master_profiles me ON me.user_id = $2"
     );
 
     // Masters can view any open order or orders assigned to them
@@ -208,6 +230,8 @@ pub async fn create_order(
     .fetch_one(&state.db)
     .await?;
 
+    notify_order(&state, order.id, OrderEvent::Created);
+
     Ok(Json(order))
 }
 
@@ -259,6 +283,15 @@ pub async fn update_order_status(
     .bind(order_id)
     .fetch_one(&state.db)
     .await?;
+
+    notify_order(
+        &state,
+        order_id,
+        OrderEvent::StatusChanged {
+            status: req.status.clone(),
+            by_master: claims.role == "master",
+        },
+    );
 
     Ok(Json(updated_order))
 }

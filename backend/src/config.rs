@@ -8,6 +8,10 @@ pub struct Config {
     pub jwt_expiration_hours: i64,
     pub server_host: String,
     pub server_port: u16,
+    /// Optional Expo access token (only needed if push security is enabled in Expo)
+    pub expo_access_token: Option<String>,
+    /// Contact shown on the privacy policy and account deletion pages
+    pub support_email: String,
 }
 
 impl Config {
@@ -26,6 +30,11 @@ impl Config {
                 .unwrap_or_else(|_| "8080".to_string())
                 .parse()
                 .expect("SERVER_PORT must be a number"),
+            expo_access_token: env::var("EXPO_ACCESS_TOKEN").ok().filter(|t| !t.is_empty()),
+            support_email: env::var("SUPPORT_EMAIL").unwrap_or_else(|_| {
+                tracing::warn!("SUPPORT_EMAIL is not set; public pages will show a placeholder");
+                "support@example.com".to_string()
+            }),
         })
     }
 }

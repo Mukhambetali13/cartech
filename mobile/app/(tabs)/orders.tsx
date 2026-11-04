@@ -6,15 +6,9 @@ import { ordersApi } from '../../src/api';
 import { useAuthStore } from '../../src/store/authStore';
 import { ChipSelect, EmptyState, Page, SectionCard, styles } from '../../src/components/ui';
 import { formatDate, vehicleSummary } from '../../src/maintenance';
+import { localized, NUMBER_LOCALE, useLanguage, useT, type MessageKey } from '../../src/i18n';
+import { shareMasterLocation } from '../../src/location';
 import { colors } from '../../src/theme';
-
-const orderStatus: Record<Order['status'], string> = {
-  open: 'Открыта',
-  accepted: 'Принята',
-  in_progress: 'В работе',
-  completed: 'Завершена',
-  cancelled: 'Отменена',
-};
 
 function statusColor(status: Order['status']) {
   const map: Record<string, string> = {
@@ -40,10 +34,10 @@ function statusBg(status: Order['status']) {
 
 type TypeFilter = 'all' | 'sos' | 'planned';
 
-const typeFilters: { value: TypeFilter; label: string }[] = [
-  { value: 'all', label: 'Все' },
-  { value: 'sos', label: '🆘 SOS' },
-  { value: 'planned', label: '📋 Плановые' },
+const typeFilters: { value: TypeFilter; label: MessageKey }[] = [
+  { value: 'all', label: 'orders.filterAll' },
+  { value: 'sos', label: 'orders.filterSos' },
+  { value: 'planned', label: 'orders.filterPlanned' },
 ];
 
 export default function OrdersScreen() {
@@ -54,20 +48,25 @@ export default function OrdersScreen() {
   const [error, setError] = useState('');
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const t = useT();
+  const language = useLanguage();
+  const isMaster = user?.role === 'master';
 
   const loadOrders = useCallback(async (pullToRefresh = false) => {
     setError('');
     if (pullToRefresh) setRefreshing(true);
     else setLoading(true);
     try {
+      // Сначала обновляем местоположение мастера, чтобы расстояния были свежими
+      if (isMaster) await shareMasterLocation({ ask: true }).catch(() => undefined);
       setOrders(await ordersApi.list());
     } catch {
-      setError('Не удалось загрузить заявки. Проверьте подключение и попробуйте ещё раз.');
+      setError(t('orders.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isMaster, t]);
 
   useFocusEffect(useCallback(() => {
     void loadOrders();
@@ -80,21 +79,21 @@ export default function OrdersScreen() {
       <View style={styles.pageContent}>
         <Text style={styles.eyebrow}>AUTOMARKET</Text>
         <Text style={styles.pageTitle}>
-          {user?.role === 'master' ? 'Заявки клиентов' : 'Мои заявки'}
+          {isMaster ? t('orders.titleMaster') : t('orders.titleClient')}
         </Text>
         <Text style={[styles.mutedText, { marginBottom: 14 }]}>
-          {user?.role === 'master'
-            ? 'Открытые заявки — нажмите, чтобы предложить цену'
-            : 'Текущий статус и предложения от мастеров'}
+          {isMaster ? t('orders.subtitleMaster') : t('orders.subtitleClient')}
         </Text>
         <View style={{ marginBottom: 14 }}>
-          <ChipSelect options={typeFilters} value={typeFilter} onChange={(value) => setTypeFilter(value ?? 'all')} />
+          <ChipSelect
+            options={typeFilters.map((option) => ({ value: option.value, label: t(option.label) }))}
+            value={typeFilter} onChange={(value) => setTypeFilter(value ?? 'all')} />
         </View>
       </View>
       {loading ? (
         <ActivityIndicator style={{ marginTop: 36 }} color={colors.primary} />
       ) : error ? (
-        <EmptyState message={error} actionLabel="Повторить" onAction={() => void loadOrders()} />
+        <EmptyState message={error} actionLabel={t('common.retry')} onAction={() => void loadOrders()} />
       ) : (
         <FlatList
           style={{ flex: 1 }}
@@ -106,11 +105,7 @@ export default function OrdersScreen() {
           }
           ListEmptyComponent={
             <EmptyState
-              message={
-                user?.role === 'master'
-                  ? 'Пока нет открытых заявок. Потяните вниз, чтобы обновить.'
-                  : 'Заявок пока нет.'
-              }
+              message={isMaster ? t('orders.emptyMaster') : t('orders.emptyClient')}
             />
           }
           renderItem={({ item }) => (
@@ -118,9 +113,9 @@ export default function OrdersScreen() {
               <SectionCard style={styles.listCard}>
                 <View style={styles.rowBetween}>
                   <View style={{ flex: 1, paddingRight: 8 }}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{localized(language, item.title, item.title_kk)}</Text>
                     <Text style={[styles.mutedText, { marginTop: 2 }]}>
-                      {item.service_type === 'sos' ? '🆘 Срочная помощь' : '📋 Плановое ТО'}
+                      {item.service_type === 'sos' ? t('order.typeSos') : t('order.typePlanned')}
                     </Text>
                   </View>
                   <Text
@@ -129,7 +124,7 @@ export default function OrdersScreen() {
                       { backgroundColor: statusBg(item.status), color: statusColor(item.status) },
                     ]}
                   >
-                    {orderStatus[item.status]}
+                    {t(`order.status.${item.status}`)}
                   </Text>
                 </View>
 
@@ -145,7 +140,7 @@ export default function OrdersScreen() {
 
                 {item.scheduled_at ? (
                   <Text style={[styles.mutedText, { marginTop: 4, fontSize: 12 }]}>
-                    📅 Желаемая дата: {formatDate(item.scheduled_at)}
+                    {t('order.preferredDate', { date: formatDate(item.scheduled_at) })}
                   </Text>
                 ) : null}
 
@@ -161,14 +156,20 @@ export default function OrdersScreen() {
                   </Text>
                 ) : null}
 
+                {item.distance_km != null ? (
+                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 12, fontWeight: '700', color: colors.primaryDark }]}>
+                    {t('order.distance', { km: item.distance_km.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 }) })}
+                  </Text>
+                ) : null}
+
                 <View style={[styles.rowBetween, { marginTop: 10, alignItems: 'center' }]}>
                   {item.price_agreed != null ? (
-                    <Text style={styles.price}>{Number(item.price_agreed).toLocaleString('ru-RU')} ₸</Text>
+                    <Text style={styles.price}>{Number(item.price_agreed).toLocaleString(NUMBER_LOCALE)} ₸</Text>
                   ) : item.client_price != null ? (
                     <Text style={[styles.price, { marginTop: 0 }]}>
-                      {Number(item.client_price).toLocaleString('ru-RU')} ₸
+                      {Number(item.client_price).toLocaleString(NUMBER_LOCALE)} ₸
                       <Text style={{ fontWeight: '500', fontSize: 12, color: colors.muted }}>
-                        {user?.role === 'client' ? ' — ваша цена' : ' — цена клиента'}
+                        {isMaster ? t('order.clientPrice') : t('order.yourPrice')}
                       </Text>
                     </Text>
                   ) : (
@@ -176,17 +177,17 @@ export default function OrdersScreen() {
                   )}
 
                   {/* CTA hint */}
-                  {user?.role === 'master' && item.status === 'open' && (
+                  {isMaster && item.status === 'open' && (
                     <View style={{ backgroundColor: colors.accentBackground, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
                       <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: 12 }}>
-                        💰 Предложить цену →
+                        {t('orders.ctaOffer')}
                       </Text>
                     </View>
                   )}
                   {user?.role === 'client' && item.status === 'open' && (
                     <View style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
                       <Text style={{ color: '#10b981', fontWeight: '700', fontSize: 12 }}>
-                        Смотреть предложения →
+                        {t('orders.ctaOffers')}
                       </Text>
                     </View>
                   )}

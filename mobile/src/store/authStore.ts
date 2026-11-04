@@ -3,6 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import type { LoginRequest, RegisterRequest, User } from '@shared/types/index';
 import { authApi } from '../api';
+import { t } from '../i18n';
+import { unregisterPush } from '../notifications';
 
 interface AuthState {
   user: User | null;
@@ -13,6 +15,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 function isUser(value: unknown): value is User {
@@ -76,7 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       set({
         initialized: true,
-        initializationError: 'Не удалось прочитать защищённые данные входа.',
+        initializationError: t('auth.secureReadFailed'),
       });
       return;
     }
@@ -99,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           set({
             user: null,
             initialized: true,
-            initializationError: 'Не удалось очистить недействительные данные входа.',
+            initializationError: t('auth.clearFailed'),
           });
         }
         return;
@@ -115,7 +118,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({
           user: null,
           initialized: true,
-          initializationError: 'Не удалось прочитать сохранённый профиль.',
+          initializationError: t('auth.profileReadFailed'),
         });
       }
     }
@@ -146,6 +149,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    await unregisterPush();
+    await clearAuth();
+    set({ user: null });
+  },
+
+  deleteAccount: async (password) => {
+    // Сервер сам удаляет push-токены аккаунта
+    await authApi.deleteAccount(password);
     await clearAuth();
     set({ user: null });
   },

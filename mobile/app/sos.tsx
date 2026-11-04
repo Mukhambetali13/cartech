@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Text,
@@ -10,12 +11,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MAX_OFFER_MARKUP, type ServiceCategory } from '@shared/types/index';
+import type { ServiceCategory } from '@shared/types/index';
+import { MAX_OFFER_MARKUP } from '../src/pricing';
 import { apiErrorMessage } from '../src/api/client';
 import { ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { EmptyState, SectionCard, styles } from '../src/components/ui';
 import { VehiclePicker } from '../src/components/VehiclePicker';
+import { localized, NUMBER_LOCALE, useLanguage, useT } from '../src/i18n';
+import { pickCurrentLocation, type PickedLocation } from '../src/location';
 import { colors } from '../src/theme';
 
 // SOS-заявка не привязана к конкретному мастеру: её видят все мастера и предлагают цену.
@@ -29,12 +33,16 @@ export default function SosRequestScreen() {
   const [destination, setDestination] = useState('');
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [price, setPrice] = useState('');
+  const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [locating, setLocating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
+  const language = useLanguage();
 
   const loadCategories = useCallback(async () => {
     setLoadError('');
@@ -43,11 +51,11 @@ export default function SosRequestScreen() {
       const all = await servicesApi.categories();
       setCategories(all.filter((category) => category.service_type === 'sos'));
     } catch (cause) {
-      setLoadError(apiErrorMessage(cause, 'Не удалось загрузить виды помощи.'));
+      setLoadError(apiErrorMessage(cause, t('sos.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadCategories();
@@ -55,28 +63,49 @@ export default function SosRequestScreen() {
 
   const isTowTruck = selectedSlug === TOW_TRUCK_SLUG;
 
+  const detectLocation = async () => {
+    setError('');
+    setLocating(true);
+    try {
+      const picked = await pickCurrentLocation();
+      if (!picked) {
+        Alert.alert(t('location.denied'), undefined, [
+          { text: 'OK', style: 'cancel' },
+          { text: t('settings.open'), onPress: () => void Linking.openSettings() },
+        ]);
+        return;
+      }
+      setLocation(picked);
+      setAddress(picked.address);
+    } catch {
+      setError(t('location.failed'));
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const submit = async () => {
     if (user?.role !== 'client') {
-      setError('Создавать SOS-заявки может только клиентский аккаунт.');
+      setError(t('sos.clientsOnly'));
       return;
     }
     const category = categories.find((item) => item.slug === selectedSlug);
     if (!category) {
-      setError('Выберите, какая помощь нужна.');
+      setError(t('sos.chooseHelp'));
       return;
     }
     if (!address.trim()) {
-      setError(isTowTruck ? 'Укажите, откуда забрать автомобиль.' : 'Укажите адрес, куда направить мастера.');
+      setError(isTowTruck ? t('sos.pickupRequired') : t('sos.addressRequired'));
       return;
     }
     if (isTowTruck && !destination.trim()) {
-      setError('Укажите, куда доставить автомобиль.');
+      setError(t('sos.destinationRequired'));
       return;
     }
 
     const clientPrice = parseFloat(price.replace(/\s/g, '').replace(',', '.'));
     if (isNaN(clientPrice) || clientPrice <= 0) {
-      setError('Укажите, сколько вы готовы заплатить.');
+      setError(t('price.required'));
       return;
     }
 
@@ -88,14 +117,16 @@ export default function SosRequestScreen() {
         client_price: clientPrice,
         title: category.name,
         vehicle_id: vehicleId ?? undefined,
-        description: isTowTruck ? `Куда доставить: ${destination.trim()}` : undefined,
+        description: isTowTruck ? t('sos.destinationPrefix', { address: destination.trim() }) : undefined,
         address: address.trim(),
+        latitude: location?.latitude,
+        longitude: location?.longitude,
       });
-      Alert.alert('Заявка отправлена', 'Заявку увидят мастера рядом — они согласятся с вашей ценой или предложат свою.', [
-        { text: 'Посмотреть заказ', onPress: () => router.replace('/(tabs)/orders') },
+      Alert.alert(t('sos.sentTitle'), t('sos.sentBody'), [
+        { text: t('sos.viewOrder'), onPress: () => router.replace('/(tabs)/orders') },
       ]);
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось отправить заявку. Проверьте подключение и попробуйте ещё раз.'));
+      setError(apiErrorMessage(cause, t('sos.sendFailed')));
     } finally {
       setSending(false);
     }
@@ -104,7 +135,7 @@ export default function SosRequestScreen() {
   if (user?.role !== 'client') {
     return (
       <View style={[styles.page, { justifyContent: 'center', padding: 20 }]}>
-        <EmptyState message="SOS-заявки могут создавать клиенты." />
+        <EmptyState message={t('sos.clientsOnlyShort')} />
       </View>
     );
   }
@@ -115,19 +146,19 @@ export default function SosRequestScreen() {
       contentContainerStyle={[styles.pageContent, { paddingTop: styles.pageContent.paddingTop + insets.top }]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.eyebrow}>СРОЧНАЯ ПОМОЩЬ</Text>
-      <Text style={styles.pageTitle}>SOS-заявка</Text>
+      <Text style={styles.eyebrow}>{t('sos.eyebrow')}</Text>
+      <Text style={styles.pageTitle}>{t('sos.title')}</Text>
       <Text style={[styles.mutedText, { marginBottom: 20 }]}>
-        Выберите, какая помощь нужна, укажите адрес и свою цену — мастера откликнутся, вы выберете лучшего.
+        {t('sos.intro')}
       </Text>
 
-      <Text style={styles.sectionTitle}>Какая помощь нужна?</Text>
+      <Text style={styles.sectionTitle}>{t('sos.whatHelp')}</Text>
       {loading ? (
         <ActivityIndicator style={{ marginVertical: 28 }} color={colors.primary} />
       ) : loadError ? (
-        <EmptyState message={loadError} actionLabel="Повторить" onAction={() => void loadCategories()} />
+        <EmptyState message={loadError} actionLabel={t('common.retry')} onAction={() => void loadCategories()} />
       ) : categories.length === 0 ? (
-        <EmptyState message="Сейчас нет доступных видов SOS-помощи." />
+        <EmptyState message={t('sos.empty')} />
       ) : (
         <View style={{ gap: 9 }}>
           {categories.map((category) => {
@@ -146,14 +177,16 @@ export default function SosRequestScreen() {
                   <View style={styles.rowBetween}>
                     <Text style={styles.cardTitle}>
                       {category.icon ? `${category.icon} ` : ''}
-                      {category.name}
+                      {localized(language, category.name, category.name_kk)}
                     </Text>
                     <View style={[styles.radio, selected && styles.radioSelected]}>
                       {selected ? <View style={styles.radioDot} /> : null}
                     </View>
                   </View>
                   {category.description ? (
-                    <Text style={styles.cardDescription}>{category.description}</Text>
+                    <Text style={styles.cardDescription}>
+                      {localized(language, category.description, category.description_kk)}
+                    </Text>
                   ) : null}
                 </SectionCard>
               </Pressable>
@@ -163,61 +196,73 @@ export default function SosRequestScreen() {
       )}
 
       <Text style={styles.sectionTitle}>
-        {isTowTruck ? 'Откуда забрать автомобиль?' : 'Куда приехать?'}
+        {isTowTruck ? t('sos.pickupQuestion') : t('sos.whereQuestion')}
       </Text>
+      <Pressable
+        accessibilityRole="button"
+        style={[styles.secondaryButton, { alignItems: 'center', marginBottom: 10 }, locating && styles.disabledButton]}
+        disabled={locating}
+        onPress={() => void detectLocation()}
+      >
+        {locating ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <Text style={styles.secondaryButtonText}>{t('location.detect')}</Text>
+        )}
+      </Pressable>
       <TextInput
-        accessibilityLabel="Адрес для SOS-заявки"
+        accessibilityLabel={t('sos.addressA11y')}
         style={styles.input}
         value={address}
         onChangeText={(value) => {
           setAddress(value);
           if (error) setError('');
         }}
-        placeholder="Город, улица, дом или ориентир"
+        placeholder={t('sos.addressPlaceholder')}
         autoCapitalize="sentences"
         returnKeyType="done"
       />
       <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
-        Например: Алматы, проспект Абая, 10
+        {location ? t('location.attached') : t('sos.addressExample')}
       </Text>
 
       {isTowTruck ? (
         <>
-          <Text style={styles.sectionTitle}>Куда доставить?</Text>
+          <Text style={styles.sectionTitle}>{t('sos.destinationQuestion')}</Text>
           <TextInput
-            accessibilityLabel="Адрес доставки автомобиля"
+            accessibilityLabel={t('sos.destinationA11y')}
             style={styles.input}
             value={destination}
             onChangeText={(value) => {
               setDestination(value);
               if (error) setError('');
             }}
-            placeholder="Адрес СТО, стоянки или дома"
+            placeholder={t('sos.destinationPlaceholder')}
             autoCapitalize="sentences"
             returnKeyType="done"
           />
         </>
       ) : null}
 
-      <Text style={styles.sectionTitle}>Ваша цена (₸)</Text>
+      <Text style={styles.sectionTitle}>{t('price.your')}</Text>
       <TextInput
-        accessibilityLabel="Ваша цена"
+        accessibilityLabel={t('price.your')}
         style={styles.input}
         value={price}
         onChangeText={(value) => {
           setPrice(value);
           if (error) setError('');
         }}
-        placeholder="Например: 5000"
+        placeholder={t('sos.pricePlaceholder')}
         keyboardType="numeric"
       />
       <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
-        Мастер может согласиться или предложить больше — но не дороже, чем на {MAX_OFFER_MARKUP.toLocaleString('ru-RU')} ₸.
+        {t('price.sosHint', { max: MAX_OFFER_MARKUP.toLocaleString(NUMBER_LOCALE) })}
       </Text>
 
-      <Text style={styles.sectionTitle}>Автомобиль</Text>
+      <Text style={styles.sectionTitle}>{t('common.vehicle')}</Text>
       <Text style={[styles.mutedText, { marginBottom: 10, fontSize: 13 }]}>
-        Необязательно, но мастеру проще, когда он знает марку, модель и год.
+        {t('sos.vehicleHint')}
       </Text>
       <VehiclePicker value={vehicleId} onChange={setVehicleId} />
 
@@ -232,7 +277,7 @@ export default function SosRequestScreen() {
         {sending ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.sosButtonText}>🆘 Отправить SOS-заявку</Text>
+          <Text style={styles.sosButtonText}>{t('sos.send')}</Text>
         )}
       </Pressable>
     </ScrollView>

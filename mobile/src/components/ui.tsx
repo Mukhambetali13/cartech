@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../i18n';
 import { colors } from '../theme';
 
 export function Page({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
@@ -99,9 +100,10 @@ export function ChipSelect<T extends string>({ options, value, onChange, allowEm
 }
 
 export function BackButton({ onPress }: { onPress: () => void }) {
+  const t = useT();
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={{ marginBottom: 14, alignSelf: 'flex-start' }}>
-      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>← Назад</Text>
+      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{t('common.back')}</Text>
     </Pressable>
   );
 }

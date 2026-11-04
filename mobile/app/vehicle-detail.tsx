@@ -16,12 +16,14 @@ import {
   upcomingWorks,
   workType,
 } from '../src/maintenance';
+import { NUMBER_LOCALE, useT } from '../src/i18n';
 import { colors } from '../src/theme';
 
 export default function VehicleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [entries, setEntries] = useState<ServiceBookEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function VehicleDetailScreen() {
         setVehicle(loadedVehicle);
         setEntries(book.entries);
       } catch (cause) {
-        setError(apiErrorMessage(cause, 'Не удалось загрузить автомобиль.'));
+        setError(apiErrorMessage(cause, t('vehicle.loadFailed')));
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -54,17 +56,17 @@ export default function VehicleDetailScreen() {
   );
 
   const removeVehicle = () => {
-    Alert.alert('Удалить автомобиль?', 'Вместе с ним удалится сервисная книжка.', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('vehicle.deleteTitle'), t('vehicle.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await vehiclesApi.remove(id!);
             router.back();
           } catch (cause) {
-            Alert.alert('Ошибка', apiErrorMessage(cause, 'Не удалось удалить автомобиль.'));
+            Alert.alert(t('common.error'), apiErrorMessage(cause, t('vehicle.deleteFailed')));
           }
         },
       },
@@ -72,17 +74,17 @@ export default function VehicleDetailScreen() {
   };
 
   const removeEntry = (entry: ServiceBookEntry) => {
-    Alert.alert('Удалить запись?', entry.title, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('entry.deleteTitle'), entry.title, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await serviceBookApi.remove(id!, entry.id);
             await load();
           } catch (cause) {
-            Alert.alert('Ошибка', apiErrorMessage(cause, 'Не удалось удалить запись.'));
+            Alert.alert(t('common.error'), apiErrorMessage(cause, t('entry.deleteFailed')));
           }
         },
       },
@@ -101,22 +103,22 @@ export default function VehicleDetailScreen() {
     return (
       <View style={[styles.page, { padding: 20, paddingTop: 24 + insets.top }]}>
         <BackButton onPress={() => router.back()} />
-        <EmptyState message={error || 'Автомобиль не найден.'} actionLabel="Повторить" onAction={() => void load()} />
+        <EmptyState message={error || t('vehicle.notFound')} actionLabel={t('common.retry')} onAction={() => void load()} />
       </View>
     );
   }
 
   const upcoming = upcomingWorks(entries, vehicle);
   const specs: [string, string | undefined][] = [
-    ['Госномер', vehicle.plate_number],
+    [t('vehicle.plateLabel'), vehicle.plate_number],
     ['VIN', vehicle.vin],
-    ['Цвет', vehicle.color],
-    ['Двигатель', [vehicle.engine_volume ? `${vehicle.engine_volume} л` : '', optionLabel(engineTypes, vehicle.engine_type)].filter(Boolean).join(', ')],
-    ['Коробка', optionLabel(transmissions, vehicle.transmission)],
-    ['Пробег', vehicle.current_mileage != null ? formatKm(vehicle.current_mileage) : undefined],
-    ['Масло ДВС', vehicle.oil_type],
-    ['Шины', vehicle.tire_size],
-    ['Заметки', vehicle.notes],
+    [t('vehicle.color'), vehicle.color],
+    [t('vehicle.engine'), [vehicle.engine_volume ? t('units.liters', { value: vehicle.engine_volume }) : '', optionLabel(engineTypes, vehicle.engine_type)].filter(Boolean).join(', ')],
+    [t('vehicle.gearbox'), optionLabel(transmissions, vehicle.transmission)],
+    [t('vehicle.mileageLabel'), vehicle.current_mileage != null ? formatKm(vehicle.current_mileage) : undefined],
+    [t('vehicle.oil'), vehicle.oil_type],
+    [t('vehicle.tires'), vehicle.tire_size],
+    [t('vehicle.notes'), vehicle.notes],
   ];
 
   return (
@@ -126,11 +128,11 @@ export default function VehicleDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={colors.primary} />}
     >
       <BackButton onPress={() => router.back()} />
-      <Text style={styles.eyebrow}>ВАШ ГАРАЖ</Text>
+      <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
       <Text style={styles.pageTitle}>
         {vehicle.make} {vehicle.model}
       </Text>
-      <Text style={styles.mutedText}>{vehicle.year} год выпуска</Text>
+      <Text style={styles.mutedText}>{t('vehicle.yearOfManufacture', { year: vehicle.year })}</Text>
 
       <SectionCard style={{ marginTop: 16 }}>
         {specs
@@ -149,22 +151,22 @@ export default function VehicleDetailScreen() {
             style={[styles.secondaryButton, { flex: 1, marginTop: 0, alignItems: 'center' }]}
             onPress={() => router.push({ pathname: '/vehicle-form', params: { id: vehicle.id } })}
           >
-            <Text style={styles.secondaryButtonText}>✏️ Изменить</Text>
+            <Text style={styles.secondaryButtonText}>{t('common.edit')}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             style={[styles.secondaryButton, { marginTop: 0, alignItems: 'center' }]}
             onPress={removeVehicle}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.error }]}>Удалить</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.error }]}>{t('common.delete')}</Text>
           </Pressable>
         </View>
       </SectionCard>
 
-      <Text style={styles.sectionTitle}>Предстоящее ТО</Text>
+      <Text style={styles.sectionTitle}>{t('vehicle.upcoming')}</Text>
       {upcoming.length === 0 ? (
         <Text style={styles.mutedText}>
-          Добавьте запись о работе с пробегом или датой следующей замены — приложение напомнит, когда пора.
+          {t('vehicle.upcomingEmpty')}
         </Text>
       ) : (
         <View style={{ gap: 9 }}>
@@ -177,17 +179,17 @@ export default function VehicleDetailScreen() {
                 {item.work.icon} {item.work.label}
               </Text>
               <Text style={{ color: reminderColors[item.status].text, fontWeight: '700', marginTop: 4 }}>
-                {item.status === 'overdue' ? '⚠️ Пора! ' : item.status === 'soon' ? '⏰ Скоро: ' : ''}
+                {item.status === 'overdue' ? t('vehicle.dueNow') : item.status === 'soon' ? t('home.dueSoon') : ''}
                 {upcomingText(item)}
               </Text>
               <Text style={[styles.mutedText, { fontSize: 12, marginTop: 4 }]}>
-                Следующая замена:{' '}
+                {t('vehicle.nextReplacement')}
                 {[
-                  item.entry.next_service_mileage != null ? `на ${formatKm(item.entry.next_service_mileage)}` : '',
-                  item.entry.next_service_date ? `до ${formatDate(item.entry.next_service_date)}` : '',
+                  item.entry.next_service_mileage != null ? t('vehicle.atKm', { km: formatKm(item.entry.next_service_mileage) }) : '',
+                  item.entry.next_service_date ? t('vehicle.byDate', { date: formatDate(item.entry.next_service_date) }) : '',
                 ]
                   .filter(Boolean)
-                  .join(' или ')}
+                  .join(t('reminder.or'))}
               </Text>
               {item.status !== 'ok' ? (
                 <Pressable
@@ -196,7 +198,7 @@ export default function VehicleDetailScreen() {
                     router.push({ pathname: '/planned', params: { vehicleId: vehicle.id, work: item.work.label } })
                   }
                 >
-                  <Text style={[styles.link, { marginTop: 8 }]}>Записаться к мастеру →</Text>
+                  <Text style={[styles.link, { marginTop: 8 }]}>{t('vehicle.bookMaster')}</Text>
                 </Pressable>
               ) : null}
             </SectionCard>
@@ -204,24 +206,24 @@ export default function VehicleDetailScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Сервисная книжка</Text>
+      <Text style={styles.sectionTitle}>{t('vehicle.serviceBookTitle')}</Text>
       <Pressable
         accessibilityRole="button"
         style={[styles.primaryButton, { marginTop: 0, marginBottom: 12 }]}
         onPress={() => router.push({ pathname: '/service-entry', params: { vehicleId: vehicle.id } })}
       >
-        <Text style={styles.primaryButtonText}>＋ Добавить запись о работе</Text>
+        <Text style={styles.primaryButtonText}>{t('vehicle.addEntry')}</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         style={[styles.secondaryButton, { marginTop: 0, marginBottom: 14, alignItems: 'center' }]}
         onPress={() => router.push({ pathname: '/planned', params: { vehicleId: vehicle.id } })}
       >
-        <Text style={styles.secondaryButtonText}>📋 Заказать плановые работы</Text>
+        <Text style={styles.secondaryButtonText}>{t('vehicle.orderPlanned')}</Text>
       </Pressable>
 
       {entries.length === 0 ? (
-        <Text style={styles.mutedText}>Записей пока нет. Например, добавьте последнюю замену масла.</Text>
+        <Text style={styles.mutedText}>{t('vehicle.noEntries')}</Text>
       ) : (
         entries.map((entry) => {
           const work = workType(entry.entry_type);
@@ -234,20 +236,20 @@ export default function VehicleDetailScreen() {
                   </Text>
                   <Text style={styles.badge}>{formatDate(entry.serviced_at)}</Text>
                 </View>
-                <Text style={styles.cardDescription}>Пробег: {formatKm(entry.mileage_at_service)}</Text>
+                <Text style={styles.cardDescription}>{t('vehicles.mileage', { km: formatKm(entry.mileage_at_service) })}</Text>
                 {entry.description ? <Text style={styles.cardDescription}>{entry.description}</Text> : null}
                 {entry.cost != null ? (
-                  <Text style={[styles.price, { marginTop: 6 }]}>{Number(entry.cost).toLocaleString('ru-RU')} ₸</Text>
+                  <Text style={[styles.price, { marginTop: 6 }]}>{Number(entry.cost).toLocaleString(NUMBER_LOCALE)} ₸</Text>
                 ) : null}
                 {entry.next_service_mileage != null || entry.next_service_date ? (
                   <Text style={[styles.mutedText, { fontSize: 12, marginTop: 6 }]}>
-                    Следующая:{' '}
+                    {t('vehicle.next')}
                     {[
                       entry.next_service_mileage != null ? formatKm(entry.next_service_mileage) : '',
                       entry.next_service_date ? formatDate(entry.next_service_date) : '',
                     ]
                       .filter(Boolean)
-                      .join(' или ')}
+                      .join(t('reminder.or'))}
                   </Text>
                 ) : null}
               </SectionCard>
@@ -257,7 +259,7 @@ export default function VehicleDetailScreen() {
       )}
       {entries.length > 0 ? (
         <Text style={[styles.mutedText, { fontSize: 12, textAlign: 'center' }]}>
-          Удерживайте запись, чтобы удалить её
+          {t('vehicle.longPressHint')}
         </Text>
       ) : null}
     </ScrollView>

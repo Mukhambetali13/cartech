@@ -5,6 +5,7 @@ import type { Vehicle } from '@shared/types/index';
 import { serviceBookApi, vehiclesApi } from '../../src/api';
 import { EmptyState, Page, SectionCard, styles } from '../../src/components/ui';
 import { formatKm, reminderColors, upcomingText, upcomingWorks, vehicleSummary, type UpcomingWork } from '../../src/maintenance';
+import { useT } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
 interface VehicleWithReminder extends Vehicle {
@@ -17,6 +18,7 @@ export default function VehiclesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const t = useT();
 
   const loadVehicles = useCallback(async (pullToRefresh = false) => {
     setError('');
@@ -35,12 +37,12 @@ export default function VehiclesScreen() {
       );
       setVehicles(withReminders);
     } catch {
-      setError('Не удалось загрузить автомобили. Проверьте подключение и попробуйте ещё раз.');
+      setError(t('vehicles.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,22 +56,22 @@ export default function VehiclesScreen() {
       style={[styles.primaryButton, { marginTop: 0, marginBottom: 14 }]}
       onPress={() => router.push('/vehicle-form')}
     >
-      <Text style={styles.primaryButtonText}>＋ Добавить автомобиль</Text>
+      <Text style={styles.primaryButtonText}>{t('vehicle.add')}</Text>
     </Pressable>
   );
 
   return (
     <Page scroll={false}>
       <View style={styles.pageContent}>
-        <Text style={styles.eyebrow}>ВАШ ГАРАЖ</Text>
-        <Text style={styles.pageTitle}>Мои автомобили</Text>
-        <Text style={[styles.mutedText, { marginBottom: 14 }]}>Данные авто, сервисная книжка и напоминания о ТО</Text>
+        <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
+        <Text style={styles.pageTitle}>{t('home.myVehicles')}</Text>
+        <Text style={[styles.mutedText, { marginBottom: 14 }]}>{t('vehicles.subtitle')}</Text>
         {!loading && !error ? addButton : null}
       </View>
       {loading ? (
         <ActivityIndicator style={{ marginTop: 36 }} color={colors.primary} />
       ) : error ? (
-        <EmptyState message={error} actionLabel="Повторить" onAction={() => void loadVehicles()} />
+        <EmptyState message={error} actionLabel={t('common.retry')} onAction={() => void loadVehicles()} />
       ) : (
         <FlatList
           style={{ flex: 1 }}
@@ -80,7 +82,7 @@ export default function VehiclesScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => void loadVehicles(true)} tintColor={colors.primary} />
           }
           ListEmptyComponent={
-            <EmptyState message="Добавьте свой автомобиль — мастера увидят его данные, а мы напомним о замене масла и ТО." />
+            <EmptyState message={t('vehicles.empty')} />
           }
           renderItem={({ item }) => {
             const summary = vehicleSummary(item);
@@ -94,9 +96,9 @@ export default function VehiclesScreen() {
                     <Text style={styles.badge}>{item.year}</Text>
                   </View>
                   {summary.details ? <Text style={styles.cardDescription}>{summary.details}</Text> : null}
-                  {item.plate_number ? <Text style={styles.cardDescription}>Номер: {item.plate_number}</Text> : null}
+                  {item.plate_number ? <Text style={styles.cardDescription}>{t('vehicles.plate', { plate: item.plate_number })}</Text> : null}
                   {item.current_mileage != null ? (
-                    <Text style={styles.cardDescription}>Пробег: {formatKm(item.current_mileage)}</Text>
+                    <Text style={styles.cardDescription}>{t('vehicles.mileage', { km: formatKm(item.current_mileage) })}</Text>
                   ) : null}
                   {item.nextWork ? (
                     <Text
@@ -113,7 +115,7 @@ export default function VehiclesScreen() {
                       {item.nextWork.work.icon} {item.nextWork.work.label}: {upcomingText(item.nextWork)}
                     </Text>
                   ) : null}
-                  <Text style={[styles.link, { marginTop: 10 }]}>Сервисная книжка →</Text>
+                  <Text style={[styles.link, { marginTop: 10 }]}>{t('vehicles.serviceBook')}</Text>
                 </SectionCard>
               </Pressable>
             );

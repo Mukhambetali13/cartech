@@ -1,4 +1,5 @@
 import type { ServiceBookEntry, Vehicle } from '@shared/types/index';
+import { NUMBER_LOCALE, t } from './i18n';
 
 export interface WorkType {
   type: string;
@@ -10,19 +11,19 @@ export interface WorkType {
 }
 
 export const workTypes: WorkType[] = [
-  { type: 'oil_change', label: 'Замена масла ДВС', icon: '🛢️', intervalKm: 10000, intervalMonths: 12 },
-  { type: 'gearbox_oil', label: 'Замена масла АКПП/КПП', icon: '⚙️', intervalKm: 60000, intervalMonths: 48 },
-  { type: 'filters', label: 'Замена фильтров', icon: '🌬️', intervalKm: 15000, intervalMonths: 12 },
-  { type: 'brake_pads', label: 'Тормозные колодки', icon: '🛑', intervalKm: 30000 },
-  { type: 'brake_discs', label: 'Тормозные диски', icon: '💿', intervalKm: 60000 },
-  { type: 'spark_plugs', label: 'Свечи зажигания', icon: '✨', intervalKm: 30000 },
-  { type: 'timing_belt', label: 'Ремень ГРМ', icon: '⛓️', intervalKm: 60000, intervalMonths: 60 },
-  { type: 'coolant', label: 'Замена антифриза', icon: '❄️', intervalKm: 60000, intervalMonths: 36 },
-  { type: 'suspension', label: 'Ремонт ходовой части', icon: '🚗' },
-  { type: 'tire_change', label: 'Шиномонтаж / смена резины', icon: '🔄', intervalMonths: 6 },
-  { type: 'engine_overhaul', label: 'Капремонт двигателя', icon: '🔧' },
-  { type: 'diagnostics', label: 'Диагностика', icon: '💻', intervalMonths: 12 },
-  { type: 'other', label: 'Другое', icon: '📝' },
+  { type: 'oil_change', get label() { return t('work.oil_change'); }, icon: '🛢️', intervalKm: 10000, intervalMonths: 12 },
+  { type: 'gearbox_oil', get label() { return t('work.gearbox_oil'); }, icon: '⚙️', intervalKm: 60000, intervalMonths: 48 },
+  { type: 'filters', get label() { return t('work.filters'); }, icon: '🌬️', intervalKm: 15000, intervalMonths: 12 },
+  { type: 'brake_pads', get label() { return t('work.brake_pads'); }, icon: '🛑', intervalKm: 30000 },
+  { type: 'brake_discs', get label() { return t('work.brake_discs'); }, icon: '💿', intervalKm: 60000 },
+  { type: 'spark_plugs', get label() { return t('work.spark_plugs'); }, icon: '✨', intervalKm: 30000 },
+  { type: 'timing_belt', get label() { return t('work.timing_belt'); }, icon: '⛓️', intervalKm: 60000, intervalMonths: 60 },
+  { type: 'coolant', get label() { return t('work.coolant'); }, icon: '❄️', intervalKm: 60000, intervalMonths: 36 },
+  { type: 'suspension', get label() { return t('work.suspension'); }, icon: '🚗' },
+  { type: 'tire_change', get label() { return t('work.tire_change'); }, icon: '🔄', intervalMonths: 6 },
+  { type: 'engine_overhaul', get label() { return t('work.engine_overhaul'); }, icon: '🔧' },
+  { type: 'diagnostics', get label() { return t('work.diagnostics'); }, icon: '💻', intervalMonths: 12 },
+  { type: 'other', get label() { return t('work.other'); }, icon: '📝' },
 ];
 
 export function workType(type: string): WorkType {
@@ -30,18 +31,18 @@ export function workType(type: string): WorkType {
 }
 
 export const engineTypes = [
-  { value: 'petrol', label: 'Бензин' },
-  { value: 'diesel', label: 'Дизель' },
-  { value: 'gas', label: 'Газ/бензин' },
-  { value: 'hybrid', label: 'Гибрид' },
-  { value: 'electric', label: 'Электро' },
+  { value: 'petrol', get label() { return t('engine.petrol'); } },
+  { value: 'diesel', get label() { return t('engine.diesel'); } },
+  { value: 'gas', get label() { return t('engine.gas'); } },
+  { value: 'hybrid', get label() { return t('engine.hybrid'); } },
+  { value: 'electric', get label() { return t('engine.electric'); } },
 ];
 
 export const transmissions = [
-  { value: 'auto', label: 'Автомат' },
-  { value: 'manual', label: 'Механика' },
-  { value: 'cvt', label: 'Вариатор' },
-  { value: 'robot', label: 'Робот' },
+  { value: 'auto', get label() { return t('gearbox.auto'); } },
+  { value: 'manual', get label() { return t('gearbox.manual'); } },
+  { value: 'cvt', get label() { return t('gearbox.cvt'); } },
+  { value: 'robot', get label() { return t('gearbox.robot'); } },
 ];
 
 export function optionLabel(options: { value: string; label: string }[], value?: string | null) {
@@ -60,7 +61,7 @@ export function vehicleSummary(vehicle: {
 }) {
   const title = [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' ');
   const details = [
-    vehicle.engine_volume ? `${vehicle.engine_volume} л` : '',
+    vehicle.engine_volume ? t('units.liters', { value: vehicle.engine_volume }) : '',
     optionLabel(engineTypes, vehicle.engine_type),
     optionLabel(transmissions, vehicle.transmission),
   ].filter(Boolean);
@@ -68,12 +69,12 @@ export function vehicleSummary(vehicle: {
 }
 
 export function formatKm(value: number) {
-  return `${Math.round(value).toLocaleString('ru-RU')} км`;
+  return t('units.km', { value: Math.round(value).toLocaleString(NUMBER_LOCALE) });
 }
 
 export function formatDate(value: string | Date) {
   const date = typeof value === 'string' ? new Date(value) : value;
-  return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return date.toLocaleDateString(NUMBER_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 /** Разбирает «ДД.ММ.ГГГГ» в дату; null, если формат неверный. */
@@ -156,12 +157,16 @@ export function upcomingWorks(entries: ServiceBookEntry[], vehicle: Pick<Vehicle
 export function upcomingText(item: UpcomingWork) {
   const parts: string[] = [];
   if (item.kmLeft != null) {
-    parts.push(item.kmLeft > 0 ? `через ${formatKm(item.kmLeft)}` : `просрочено на ${formatKm(-item.kmLeft)}`);
+    parts.push(item.kmLeft > 0 ? t('reminder.inKm', { km: formatKm(item.kmLeft) }) : t('reminder.overdueKm', { km: formatKm(-item.kmLeft) }));
   }
   if (item.daysLeft != null) {
-    parts.push(item.daysLeft > 0 ? `через ${item.daysLeft} дн.` : `срок прошёл ${formatDate(item.entry.next_service_date!)}`);
+    parts.push(
+      item.daysLeft > 0
+        ? t('reminder.inDays', { days: item.daysLeft })
+        : t('reminder.datePassed', { date: formatDate(item.entry.next_service_date!) }),
+    );
   }
-  return parts.join(' или ');
+  return parts.join(t('reminder.or'));
 }
 
 export const reminderColors: Record<ReminderStatus, { text: string; background: string }> = {

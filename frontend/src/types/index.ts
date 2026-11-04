@@ -45,6 +45,8 @@ export interface ServiceCategory {
   service_type: 'sos' | 'planned';
   description?: string;
   sort_order?: number;
+  name_kk?: string;
+  description_kk?: string;
 }
 
 export interface Service {
@@ -105,6 +107,10 @@ export interface Order {
   vehicle_engine_volume?: string;
   vehicle_transmission?: string;
   vehicle_mileage?: number;
+  /** Название вида работ на казахском, если заказ создан по категории */
+  title_kk?: string;
+  /** Для мастера: расстояние от его последнего местоположения, км */
+  distance_km?: number;
 }
 
 /** Насколько мастер может поднять цену клиента (₸) — совпадает с бэкендом */

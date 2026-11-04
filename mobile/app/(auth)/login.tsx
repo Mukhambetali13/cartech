@@ -12,6 +12,8 @@ import { Link, useRouter } from 'expo-router';
 import { apiErrorMessage } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { AuthCard, Field, styles } from '../../src/components/ui';
+import { LanguageSwitch } from '../../src/components/LanguageSwitch';
+import { useT } from '../../src/i18n';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -20,6 +22,7 @@ export default function LoginScreen() {
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
   const router = useRouter();
+  const t = useT();
 
   const submit = async () => {
     setError('');
@@ -27,7 +30,7 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace('/(tabs)');
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось войти. Проверьте данные и подключение.'));
+      setError(apiErrorMessage(cause, t('auth.loginFailed')));
     }
   };
 
@@ -36,7 +39,8 @@ export default function LoginScreen() {
       style={styles.keyboardPage}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <AuthCard title="Добро пожаловать" subtitle="Войдите в свой аккаунт AutoMarket">
+      <LanguageSwitch style={{ alignSelf: 'center', marginBottom: 14 }} />
+      <AuthCard title={t('auth.welcome')} subtitle={t('auth.loginSubtitle')}>
         <Field label="Email">
           <TextInput
             style={styles.input}
@@ -48,12 +52,12 @@ export default function LoginScreen() {
             autoComplete="email"
           />
         </Field>
-        <Field label="Пароль">
+        <Field label={t('auth.password')}>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="Ваш пароль"
+            placeholder={t('auth.passwordPlaceholder')}
             secureTextEntry
             autoComplete="current-password"
           />
@@ -65,11 +69,11 @@ export default function LoginScreen() {
           onPress={() => void submit()}
           disabled={isLoading || !email.trim() || !password}
         >
-          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Войти</Text>}
+          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{t('auth.signIn')}</Text>}
         </Pressable>
         <View style={styles.authFooter}>
-          <Text style={styles.mutedText}>Нет аккаунта? </Text>
-          <Link href="/(auth)/register" style={styles.link}>Зарегистрироваться</Link>
+          <Text style={styles.mutedText}>{t('auth.noAccount')}</Text>
+          <Link href="/(auth)/register" style={styles.link}>{t('auth.signUp')}</Link>
         </View>
       </AuthCard>
       <Text style={styles.brandCaption}>🚗 AutoMarket</Text>

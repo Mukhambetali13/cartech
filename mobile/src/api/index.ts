@@ -1,4 +1,4 @@
-export { apiErrorMessage } from './client';
+export { apiErrorMessage, publicPageUrl } from './client';
 
 import type {
   AuthResponse,
@@ -26,6 +26,15 @@ export const authApi = {
   register: (data: RegisterRequest) =>
     api.post<AuthResponse>('/auth/register', data).then((response) => response.data),
   me: () => api.get<User>('/auth/me').then((response) => response.data),
+  deleteAccount: (password: string) => api.delete('/auth/me', { data: { password } }).then((r) => r.data),
+  updateLocation: (latitude: number, longitude: number) =>
+    api.put('/auth/me/location', { latitude, longitude }).then((r) => r.data),
+};
+
+export const pushApi = {
+  register: (data: { token: string; platform: string; language: string }) =>
+    api.post('/push-tokens', data).then((r) => r.data),
+  remove: (token: string) => api.delete('/push-tokens', { data: { token } }).then((r) => r.data),
 };
 
 export const servicesApi = {

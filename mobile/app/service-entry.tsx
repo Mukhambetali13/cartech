@@ -6,6 +6,7 @@ import type { Vehicle } from '@shared/types/index';
 import { apiErrorMessage, serviceBookApi, vehiclesApi } from '../src/api';
 import { BackButton, ChipSelect, Field, styles } from '../src/components/ui';
 import { addMonths, formatDate, parseDate, toApiDate, workType, workTypes } from '../src/maintenance';
+import { useT } from '../src/i18n';
 import { colors } from '../src/theme';
 
 const digitsOnly = (value: string) => value.replace(/\D/g, '');
@@ -14,6 +15,7 @@ export default function ServiceEntryScreen() {
   const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [type, setType] = useState('oil_change');
   const [title, setTitle] = useState(workType('oil_change').label);
@@ -57,24 +59,24 @@ export default function ServiceEntryScreen() {
     const serviced = parseDate(date);
     const km = Number(mileage);
     if (!title.trim()) {
-      setError('Укажите название работы.');
+      setError(t('entry.titleRequired'));
       return;
     }
     if (!serviced || serviced > new Date()) {
-      setError('Укажите дату работы в формате ДД.ММ.ГГГГ (не в будущем).');
+      setError(t('entry.dateInvalid'));
       return;
     }
     if (!mileage || km <= 0) {
-      setError('Укажите пробег на момент работы.');
+      setError(t('entry.mileageRequired'));
       return;
     }
     const next = nextDate.trim() ? parseDate(nextDate) : null;
     if (nextDate.trim() && !next) {
-      setError('Дата следующей замены — в формате ДД.ММ.ГГГГ.');
+      setError(t('entry.nextDateInvalid'));
       return;
     }
     if (nextMileage && Number(nextMileage) <= km) {
-      setError('Пробег следующей замены должен быть больше текущего.');
+      setError(t('entry.nextMileageInvalid'));
       return;
     }
 
@@ -95,7 +97,7 @@ export default function ServiceEntryScreen() {
       });
       router.back();
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось сохранить запись.'));
+      setError(apiErrorMessage(cause, t('entry.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -108,15 +110,15 @@ export default function ServiceEntryScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.eyebrow}>СЕРВИСНАЯ КНИЖКА</Text>
-        <Text style={styles.pageTitle}>Запись о работе</Text>
+        <Text style={styles.eyebrow}>{t('entry.eyebrow')}</Text>
+        <Text style={styles.pageTitle}>{t('entry.title')}</Text>
         {vehicle ? (
           <Text style={styles.mutedText}>
             {vehicle.make} {vehicle.model}, {vehicle.year}
           </Text>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Что сделали?</Text>
+        <Text style={styles.sectionTitle}>{t('entry.whatDone')}</Text>
         <ChipSelect
           options={workTypes.map((work) => ({ value: work.type, label: `${work.icon} ${work.label}` }))}
           value={type}
@@ -124,23 +126,23 @@ export default function ServiceEntryScreen() {
         />
 
         <View style={{ marginTop: 18 }}>
-          <Field label="Название">
-            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Замена масла ДВС" />
+          <Field label={t('entry.name')}>
+            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder={t('work.oil_change')} />
           </Field>
           <View style={styles.rowGap}>
             <View style={{ flex: 1 }}>
-              <Field label="Дата *">
+              <Field label={t('entry.date')}>
                 <TextInput
                   style={styles.input}
                   value={date}
                   onChangeText={setDate}
-                  placeholder="ДД.ММ.ГГГГ"
+                  placeholder={t('planned.datePlaceholder')}
                   keyboardType="numbers-and-punctuation"
                 />
               </Field>
             </View>
             <View style={{ flex: 1 }}>
-              <Field label="Пробег, км *">
+              <Field label={t('entry.mileage')}>
                 <TextInput
                   style={styles.input}
                   value={mileage}
@@ -151,7 +153,7 @@ export default function ServiceEntryScreen() {
               </Field>
             </View>
           </View>
-          <Field label="Стоимость, ₸">
+          <Field label={t('entry.cost')}>
             <TextInput
               style={styles.input}
               value={cost}
@@ -160,24 +162,24 @@ export default function ServiceEntryScreen() {
               keyboardType="number-pad"
             />
           </Field>
-          <Field label="Комментарий">
+          <Field label={t('entry.comment')}>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Масло Mobil 5W-30, фильтр Mann W 712/75, СТО на Абая"
+              placeholder={t('entry.commentPlaceholder')}
               multiline
             />
           </Field>
         </View>
 
-        <Text style={styles.sectionTitle}>Когда следующая замена?</Text>
+        <Text style={styles.sectionTitle}>{t('entry.nextQuestion')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 12 }]}>
-          Подставили рекомендуемый интервал — поправьте под свою машину. Напомним, когда подойдёт срок.
+          {t('entry.nextHint')}
         </Text>
         <View style={styles.rowGap}>
           <View style={{ flex: 1 }}>
-            <Field label="На пробеге, км">
+            <Field label={t('entry.nextMileage')}>
               <TextInput
                 style={styles.input}
                 value={nextMileage}
@@ -188,12 +190,12 @@ export default function ServiceEntryScreen() {
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Или до даты">
+            <Field label={t('entry.nextDate')}>
               <TextInput
                 style={styles.input}
                 value={nextDate}
                 onChangeText={setNextDate}
-                placeholder="ДД.ММ.ГГГГ"
+                placeholder={t('planned.datePlaceholder')}
                 keyboardType="numbers-and-punctuation"
               />
             </Field>
@@ -208,10 +210,10 @@ export default function ServiceEntryScreen() {
           disabled={saving}
           onPress={() => void save()}
         >
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Сохранить запись</Text>}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{t('entry.save')}</Text>}
         </Pressable>
         <Text style={[styles.mutedText, { fontSize: 12, marginTop: 10, color: colors.muted }]}>
-          Пробег автомобиля обновится автоматически, если он больше текущего.
+          {t('entry.mileageUpdateHint')}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

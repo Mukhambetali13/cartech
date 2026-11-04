@@ -13,6 +13,8 @@ pub struct ServiceCategory {
     pub service_type: String, // 'sos' | 'planned'
     pub description: Option<String>,
     pub sort_order: Option<i32>,
+    pub name_kk: Option<String>,
+    pub description_kk: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

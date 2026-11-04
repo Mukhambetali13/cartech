@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import type { Vehicle } from '@shared/types/index';
 import { vehiclesApi } from '../api';
 import { vehicleSummary } from '../maintenance';
+import { useT } from '../i18n';
 import { colors } from '../theme';
 import { SectionCard, styles } from './ui';
 
@@ -16,6 +17,7 @@ export function VehiclePicker({ value, onChange, required = false }: {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const t = useT();
 
   useFocusEffect(
     useCallback(() => {
@@ -64,7 +66,7 @@ export function VehiclePicker({ value, onChange, required = false }: {
         );
       })}
       <Pressable accessibilityRole="button" onPress={() => router.push('/vehicle-form')}>
-        <Text style={[styles.link, { paddingVertical: 6 }]}>＋ Добавить автомобиль</Text>
+        <Text style={[styles.link, { paddingVertical: 6 }]}>{t('vehicle.add')}</Text>
       </Pressable>
     </View>
   );

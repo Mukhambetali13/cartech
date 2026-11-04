@@ -6,6 +6,7 @@ import type { CreateVehicleRequest } from '@shared/types/index';
 import { apiErrorMessage, vehiclesApi } from '../src/api';
 import { BackButton, ChipSelect, Field, styles } from '../src/components/ui';
 import { engineTypes, transmissions } from '../src/maintenance';
+import { useT } from '../src/i18n';
 import { colors } from '../src/theme';
 
 interface FormState {
@@ -47,6 +48,7 @@ export default function VehicleFormScreen() {
   const isEdit = Boolean(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -73,7 +75,7 @@ export default function VehicleFormScreen() {
           notes: vehicle.notes ?? '',
         }),
       )
-      .catch((cause) => setError(apiErrorMessage(cause, 'Не удалось загрузить автомобиль.')))
+      .catch((cause) => setError(apiErrorMessage(cause, t('vehicle.loadFailed'))))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -86,15 +88,15 @@ export default function VehicleFormScreen() {
     const year = Number(form.year);
     const currentYear = new Date().getFullYear();
     if (!form.make.trim() || !form.model.trim()) {
-      setError('Укажите марку и модель.');
+      setError(t('vehicleForm.makeModelRequired'));
       return;
     }
     if (!Number.isInteger(year) || year < 1950 || year > currentYear + 1) {
-      setError(`Укажите год выпуска от 1950 до ${currentYear + 1}.`);
+      setError(t('vehicleForm.yearInvalid', { max: currentYear + 1 }));
       return;
     }
     if (form.vin.trim() && form.vin.trim().length !== 17) {
-      setError('VIN-код должен состоять из 17 символов.');
+      setError(t('vehicleForm.vinInvalid'));
       return;
     }
 
@@ -122,7 +124,7 @@ export default function VehicleFormScreen() {
       else await vehiclesApi.create(data);
       router.back();
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось сохранить автомобиль.'));
+      setError(apiErrorMessage(cause, t('vehicleForm.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -143,22 +145,22 @@ export default function VehicleFormScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.eyebrow}>ВАШ ГАРАЖ</Text>
-        <Text style={styles.pageTitle}>{isEdit ? 'Редактировать авто' : 'Новый автомобиль'}</Text>
+        <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
+        <Text style={styles.pageTitle}>{isEdit ? t('vehicleForm.editTitle') : t('vehicleForm.newTitle')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 8 }]}>
-          Эти данные помогут мастеру подобрать запчасти и масло, а вам — не пропустить ТО.
+          {t('vehicleForm.intro')}
         </Text>
 
-        <Text style={styles.sectionTitle}>Основное</Text>
-        <Field label="Марка *">
+        <Text style={styles.sectionTitle}>{t('vehicleForm.basic')}</Text>
+        <Field label={t('vehicleForm.make')}>
           <TextInput style={styles.input} value={form.make} onChangeText={(v) => set('make', v)} placeholder="Toyota" />
         </Field>
-        <Field label="Модель *">
+        <Field label={t('vehicleForm.model')}>
           <TextInput style={styles.input} value={form.model} onChangeText={(v) => set('model', v)} placeholder="Camry" />
         </Field>
         <View style={styles.rowGap}>
           <View style={{ flex: 1 }}>
-            <Field label="Год выпуска *">
+            <Field label={t('vehicleForm.year')}>
               <TextInput
                 style={styles.input}
                 value={form.year}
@@ -169,7 +171,7 @@ export default function VehicleFormScreen() {
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="Госномер">
+            <Field label={t('vehicle.plateLabel')}>
               <TextInput
                 style={styles.input}
                 value={form.plate_number}
@@ -180,24 +182,24 @@ export default function VehicleFormScreen() {
             </Field>
           </View>
         </View>
-        <Field label="VIN-код">
+        <Field label={t('vehicleForm.vin')}>
           <TextInput
             style={styles.input}
             value={form.vin}
             onChangeText={(v) => set('vin', v.replace(/\s/g, '').slice(0, 17))}
-            placeholder="17 символов"
+            placeholder={t('vehicleForm.vinPlaceholder')}
             autoCapitalize="characters"
           />
         </Field>
-        <Field label="Цвет">
-          <TextInput style={styles.input} value={form.color} onChangeText={(v) => set('color', v)} placeholder="Белый" />
+        <Field label={t('vehicle.color')}>
+          <TextInput style={styles.input} value={form.color} onChangeText={(v) => set('color', v)} placeholder={t('vehicleForm.colorPlaceholder')} />
         </Field>
 
-        <Text style={styles.sectionTitle}>Двигатель и трансмиссия</Text>
-        <Field label="Тип двигателя">
+        <Text style={styles.sectionTitle}>{t('vehicleForm.engineSection')}</Text>
+        <Field label={t('vehicleForm.engineType')}>
           <ChipSelect options={engineTypes} value={form.engine_type} onChange={(v) => set('engine_type', v)} allowEmpty />
         </Field>
-        <Field label="Объём двигателя, л">
+        <Field label={t('vehicleForm.engineVolume')}>
           <TextInput
             style={styles.input}
             value={form.engine_volume}
@@ -206,12 +208,12 @@ export default function VehicleFormScreen() {
             keyboardType="decimal-pad"
           />
         </Field>
-        <Field label="Коробка передач">
+        <Field label={t('vehicleForm.gearbox')}>
           <ChipSelect options={transmissions} value={form.transmission} onChange={(v) => set('transmission', v)} allowEmpty />
         </Field>
 
-        <Text style={styles.sectionTitle}>Для техобслуживания</Text>
-        <Field label="Текущий пробег, км">
+        <Text style={styles.sectionTitle}>{t('vehicleForm.maintenance')}</Text>
+        <Field label={t('vehicleForm.mileage')}>
           <TextInput
             style={styles.input}
             value={form.current_mileage}
@@ -220,7 +222,7 @@ export default function VehicleFormScreen() {
             keyboardType="number-pad"
           />
         </Field>
-        <Field label="Моторное масло">
+        <Field label={t('vehicleForm.oil')}>
           <TextInput
             style={styles.input}
             value={form.oil_type}
@@ -229,7 +231,7 @@ export default function VehicleFormScreen() {
             autoCapitalize="characters"
           />
         </Field>
-        <Field label="Размер шин">
+        <Field label={t('vehicleForm.tires')}>
           <TextInput
             style={styles.input}
             value={form.tire_size}
@@ -238,12 +240,12 @@ export default function VehicleFormScreen() {
             autoCapitalize="characters"
           />
         </Field>
-        <Field label="Заметки">
+        <Field label={t('vehicle.notes')}>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={form.notes}
             onChangeText={(v) => set('notes', v)}
-            placeholder="Особенности авто, артикулы фильтров и т.п."
+            placeholder={t('vehicleForm.notesPlaceholder')}
             multiline
           />
         </Field>
@@ -256,7 +258,7 @@ export default function VehicleFormScreen() {
           disabled={saving}
           onPress={() => void save()}
         >
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Сохранить</Text>}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{t('common.save')}</Text>}
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

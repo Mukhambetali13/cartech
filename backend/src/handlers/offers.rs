@@ -14,6 +14,7 @@ use crate::{
         offer::{CreateOfferRequest, OrderOffer, OrderOfferWithMaster, MAX_OFFER_MARKUP},
         user::Claims,
     },
+    push::{notify_order, OrderEvent},
 };
 
 /// GET /orders/:id/offers
@@ -153,6 +154,8 @@ pub async fn create_offer(
     .fetch_one(&state.db)
     .await?;
 
+    notify_order(&state, order_id, OrderEvent::NewOffer { price: offer.price.clone() });
+
     Ok((StatusCode::CREATED, Json(offer)))
 }
 
@@ -238,6 +241,8 @@ pub async fn accept_offer(
     .await?;
 
     tx.commit().await?;
+
+    notify_order(&state, order_id, OrderEvent::OfferAccepted);
 
     Ok(Json(accepted_offer))
 }

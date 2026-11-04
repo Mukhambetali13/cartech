@@ -169,6 +169,57 @@ cd frontend && npm run build && npm run lint
 cd mobile && npm run typecheck && npx expo-doctor
 ```
 
+## Выпуск в Google Play
+
+Релизные сборки делает [EAS Build](https://docs.expo.dev/build/introduction/), он же
+хранит ключ подписи. Один раз:
+
+```bash
+npm install -g eas-cli
+```
+
+```bash
+cd mobile && eas login && eas init
+```
+
+`eas init` создаст проект в Expo и выведет `projectId` — пропишите его в
+`mobile/app.json` в `expo.extra.eas.projectId` (без него не работают push-уведомления).
+
+**Push на Android.** Создайте проект в [Firebase](https://console.firebase.google.com),
+добавьте Android-приложение с пакетом `com.automarket.app`, скачайте ключ сервисного
+аккаунта (Project settings → Service accounts) и загрузите его командой
+`eas credentials` → Android → Google Service Account Key for FCM V1.
+
+**Адрес API.** В `mobile/eas.json` в профиле `production` замените
+`https://api.example.kz/api` на адрес своего сервера. Production-сборка с `http://`
+или с адресом-заглушкой не запустится — это проверяет `mobile/app.config.ts`.
+
+Сборка и отправка:
+
+```bash
+cd mobile && eas build --platform android --profile production
+```
+
+```bash
+cd mobile && eas submit --platform android --profile production
+```
+
+Номер версии (`versionCode`) EAS увеличивает сам. Тестовую APK для телефона без
+Google Play даёт профиль `preview`: `eas build -p android --profile preview`.
+
+**Что указать в Play Console:**
+- Политика конфиденциальности: `https://<ваш-домен>/privacy`
+- Удаление аккаунта (Data safety → Data deletion): `https://<ваш-домен>/account-deletion`
+- В приложении аккаунт удаляется в «Главная → ⚙️ Настройки → Удалить аккаунт».
+
+## Языки
+
+Приложение на казахском и русском. По умолчанию язык берётся из настроек
+телефона, переключается на экране входа и в настройках. Строки лежат в
+`mobile/src/i18n/ru.ts` и `kk.ts`; TypeScript не даст собрать приложение,
+если в `kk.ts` нет какого-то ключа из `ru.ts`. Казахские названия видов работ
+хранятся в базе (`service_categories.name_kk`).
+
 ## Настройки бэкенда (`backend/.env`)
 
 | Переменная             | Значение по умолчанию                                         |
@@ -179,6 +230,8 @@ cd mobile && npm run typecheck && npx expo-doctor
 | `SERVER_HOST`          | `0.0.0.0` — сервер доступен из локальной сети (нужно телефону) |
 | `SERVER_PORT`          | `8080`                                                        |
 | `RUST_LOG`             | `debug`                                                       |
+| `SUPPORT_EMAIL`        | почта поддержки на страницах `/privacy` и `/account-deletion` |
+| `EXPO_ACCESS_TOKEN`    | пусто; нужен, только если в Expo включена защита push          |
 
 Сайт по умолчанию ходит в API на `http://localhost:8080`; другой адрес можно
 задать переменной `VITE_API_URL` в `frontend/.env`.
