@@ -10,52 +10,66 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Service } from '@shared/types/index';
+import type { ServiceCategory } from '@shared/types/index';
 import { apiErrorMessage } from '../src/api/client';
 import { ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { EmptyState, SectionCard, styles } from '../src/components/ui';
+import { VehiclePicker } from '../src/components/VehiclePicker';
 import { colors } from '../src/theme';
+
+// SOS-заявка не привязана к конкретному мастеру: её видят все мастера и предлагают цену.
+const TOW_TRUCK_SLUG = 'tow-truck';
 
 export default function SosRequestScreen() {
   const user = useAuthStore((state) => state.user);
-  const [services, setServices] = useState<Service[]>([]);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [address, setAddress] = useState('');
+  const [destination, setDestination] = useState('');
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const loadServices = useCallback(async () => {
-    setError('');
+  const loadCategories = useCallback(async () => {
+    setLoadError('');
     setLoading(true);
     try {
-      setServices(await servicesApi.list({ service_type: 'sos' }));
+      const all = await servicesApi.categories();
+      setCategories(all.filter((category) => category.service_type === 'sos'));
     } catch (cause) {
-      setError(apiErrorMessage(cause, 'Не удалось загрузить SOS-услуги.'));
+      setLoadError(apiErrorMessage(cause, 'Не удалось загрузить виды помощи.'));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadServices();
-  }, [loadServices]);
+    void loadCategories();
+  }, [loadCategories]);
+
+  const isTowTruck = selectedSlug === TOW_TRUCK_SLUG;
 
   const submit = async () => {
     if (user?.role !== 'client') {
       setError('Создавать SOS-заявки может только клиентский аккаунт.');
       return;
     }
-    const selectedService = services.find((service) => service.id === selectedServiceId);
-    if (!selectedService) {
-      setError('Выберите нужную SOS-услугу.');
+    const category = categories.find((item) => item.slug === selectedSlug);
+    if (!category) {
+      setError('Выберите, какая помощь нужна.');
       return;
     }
     if (!address.trim()) {
-      setError('Укажите адрес, куда направить мастера.');
+      setError(isTowTruck ? 'Укажите, откуда забрать автомобиль.' : 'Укажите адрес, куда направить мастера.');
+      return;
+    }
+    if (isTowTruck && !destination.trim()) {
+      setError('Укажите, куда доставить автомобиль.');
       return;
     }
 
@@ -63,12 +77,13 @@ export default function SosRequestScreen() {
     setSending(true);
     try {
       await ordersApi.create({
-        service_id: selectedService.id,
         service_type: 'sos',
-        title: selectedService.title,
+        title: category.name,
+        vehicle_id: vehicleId ?? undefined,
+        description: isTowTruck ? `Куда доставить: ${destination.trim()}` : undefined,
         address: address.trim(),
       });
-      Alert.alert('Заявка отправлена', 'Мастер получил вашу SOS-заявку.', [
+      Alert.alert('Заявка отправлена', 'Заявку увидят мастера рядом — ждите предложений с ценой.', [
         { text: 'Посмотреть заказ', onPress: () => router.replace('/(tabs)/orders') },
       ]);
     } catch (cause) {
@@ -95,46 +110,43 @@ export default function SosRequestScreen() {
       <Text style={styles.eyebrow}>СРОЧНАЯ ПОМОЩЬ</Text>
       <Text style={styles.pageTitle}>SOS-заявка</Text>
       <Text style={[styles.mutedText, { marginBottom: 20 }]}>
-        Выберите услугу и укажите адрес — остальные детали можно обсудить с мастером.
+        Выберите, какая помощь нужна, и укажите адрес — мастера предложат цену, вы выберете лучшего.
       </Text>
 
       <Text style={styles.sectionTitle}>Какая помощь нужна?</Text>
       {loading ? (
         <ActivityIndicator style={{ marginVertical: 28 }} color={colors.primary} />
-      ) : error && services.length === 0 ? (
-        <EmptyState message={error} actionLabel="Повторить" onAction={() => void loadServices()} />
-      ) : services.length === 0 ? (
-        <EmptyState message="Сейчас в каталоге нет активных SOS-услуг." />
+      ) : loadError ? (
+        <EmptyState message={loadError} actionLabel="Повторить" onAction={() => void loadCategories()} />
+      ) : categories.length === 0 ? (
+        <EmptyState message="Сейчас нет доступных видов SOS-помощи." />
       ) : (
         <View style={{ gap: 9 }}>
-          {services.map((service) => {
-            const selected = selectedServiceId === service.id;
+          {categories.map((category) => {
+            const selected = selectedSlug === category.slug;
             return (
               <Pressable
-                key={service.id}
+                key={category.id}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
                 onPress={() => {
-                  setSelectedServiceId(service.id);
+                  setSelectedSlug(category.slug);
                   setError('');
                 }}
               >
                 <SectionCard style={[styles.sosServiceCard, selected && styles.sosServiceCardSelected]}>
                   <View style={styles.rowBetween}>
-                    <Text style={styles.cardTitle}>{service.title}</Text>
+                    <Text style={styles.cardTitle}>
+                      {category.icon ? `${category.icon} ` : ''}
+                      {category.name}
+                    </Text>
                     <View style={[styles.radio, selected && styles.radioSelected]}>
                       {selected ? <View style={styles.radioDot} /> : null}
                     </View>
                   </View>
-                  {service.description ? (
-                    <Text style={styles.cardDescription}>{service.description}</Text>
+                  {category.description ? (
+                    <Text style={styles.cardDescription}>{category.description}</Text>
                   ) : null}
-                  <Text style={styles.mutedText}>
-                    {service.master_company || service.master_name || 'Мастер AutoMarket'}
-                    {service.price_from != null
-                      ? ` · от ${Number(service.price_from).toLocaleString('ru-RU')} ₸`
-                      : ''}
-                  </Text>
                 </SectionCard>
               </Pressable>
             );
@@ -142,7 +154,9 @@ export default function SosRequestScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Куда приехать?</Text>
+      <Text style={styles.sectionTitle}>
+        {isTowTruck ? 'Откуда забрать автомобиль?' : 'Куда приехать?'}
+      </Text>
       <TextInput
         accessibilityLabel="Адрес для SOS-заявки"
         style={styles.input}
@@ -159,13 +173,37 @@ export default function SosRequestScreen() {
         Например: Алматы, проспект Абая, 10
       </Text>
 
-      {error && services.length > 0 ? <Text style={[styles.error, { marginTop: 14 }]}>{error}</Text> : null}
+      {isTowTruck ? (
+        <>
+          <Text style={styles.sectionTitle}>Куда доставить?</Text>
+          <TextInput
+            accessibilityLabel="Адрес доставки автомобиля"
+            style={styles.input}
+            value={destination}
+            onChangeText={(value) => {
+              setDestination(value);
+              if (error) setError('');
+            }}
+            placeholder="Адрес СТО, стоянки или дома"
+            autoCapitalize="sentences"
+            returnKeyType="done"
+          />
+        </>
+      ) : null}
+
+      <Text style={styles.sectionTitle}>Автомобиль</Text>
+      <Text style={[styles.mutedText, { marginBottom: 10, fontSize: 13 }]}>
+        Необязательно, но мастеру проще, когда он знает марку, модель и год.
+      </Text>
+      <VehiclePicker value={vehicleId} onChange={setVehicleId} />
+
+      {error ? <Text style={[styles.error, { marginTop: 14 }]}>{error}</Text> : null}
 
       <Pressable
         accessibilityRole="button"
-        style={[styles.sosButton, (sending || loading || services.length === 0) && styles.disabledButton]}
+        style={[styles.sosButton, (sending || !selectedSlug) && styles.disabledButton]}
         onPress={() => void submit()}
-        disabled={sending || loading || services.length === 0}
+        disabled={sending || !selectedSlug}
       >
         {sending ? (
           <ActivityIndicator color="#fff" />

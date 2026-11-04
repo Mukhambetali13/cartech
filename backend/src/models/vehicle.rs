@@ -17,6 +17,9 @@ pub struct Vehicle {
     pub transmission: Option<String>,
     pub current_mileage: Option<i32>,
     pub notes: Option<String>,
+    pub engine_volume: Option<String>,
+    pub oil_type: Option<String>,
+    pub tire_size: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -33,6 +36,9 @@ pub struct CreateVehicleRequest {
     pub transmission: Option<String>,
     pub current_mileage: Option<i32>,
     pub notes: Option<String>,
+    pub engine_volume: Option<String>,
+    pub oil_type: Option<String>,
+    pub tire_size: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,4 +53,7 @@ pub struct UpdateVehicleRequest {
     pub transmission: Option<String>,
     pub current_mileage: Option<i32>,
     pub notes: Option<String>,
+    pub engine_volume: Option<String>,
+    pub oil_type: Option<String>,
+    pub tire_size: Option<String>,
 }

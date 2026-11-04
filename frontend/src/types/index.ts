@@ -30,6 +30,9 @@ export interface Vehicle {
   transmission?: string;
   current_mileage?: number;
   notes?: string;
+  engine_volume?: string;
+  oil_type?: string;
+  tire_size?: string;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +97,13 @@ export interface Order {
   created_at: string;
   updated_at: string;
   counterparty_name?: string;
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_year?: number;
+  vehicle_engine_type?: string;
+  vehicle_engine_volume?: string;
+  vehicle_transmission?: string;
+  vehicle_mileage?: number;
 }
 
 export type OfferStatus = 'pending' | 'accepted' | 'declined';
@@ -185,6 +195,9 @@ export interface CreateVehicleRequest {
   transmission?: string;
   current_mileage?: number;
   notes?: string;
+  engine_volume?: string;
+  oil_type?: string;
+  tire_size?: string;
 }
 
 export interface CreateOrderRequest {
@@ -205,6 +218,8 @@ export interface CreateServiceBookEntryRequest {
   description?: string;
   mileage_at_service: number;
   next_service_mileage?: number;
+  next_service_date?: string;
   parts_used?: Record<string, unknown>;
   cost?: number;
+  serviced_at?: string;
 }

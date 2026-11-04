@@ -27,12 +27,37 @@ pub struct Order {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Client's vehicle attached to an order, shown to masters.
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct OrderVehicleInfo {
+    pub vehicle_make: Option<String>,
+    pub vehicle_model: Option<String>,
+    pub vehicle_year: Option<i32>,
+    pub vehicle_engine_type: Option<String>,
+    pub vehicle_engine_volume: Option<String>,
+    pub vehicle_transmission: Option<String>,
+    pub vehicle_mileage: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize, FromRow)]
 pub struct OrderListItem {
     #[sqlx(flatten)]
     #[serde(flatten)]
     pub order: Order,
     pub counterparty_name: Option<String>,
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub vehicle: OrderVehicleInfo,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct OrderDetail {
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub order: Order,
+    #[sqlx(flatten)]
+    #[serde(flatten)]
+    pub vehicle: OrderVehicleInfo,
 }
 
 #[derive(Debug, Deserialize)]

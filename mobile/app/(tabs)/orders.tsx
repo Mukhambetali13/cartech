@@ -4,7 +4,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import type { Order } from '@shared/types/index';
 import { ordersApi } from '../../src/api';
 import { useAuthStore } from '../../src/store/authStore';
-import { EmptyState, Page, SectionCard, styles } from '../../src/components/ui';
+import { ChipSelect, EmptyState, Page, SectionCard, styles } from '../../src/components/ui';
+import { formatDate, vehicleSummary } from '../../src/maintenance';
 import { colors } from '../../src/theme';
 
 const orderStatus: Record<Order['status'], string> = {
@@ -37,8 +38,17 @@ function statusBg(status: Order['status']) {
   return map[status] ?? colors.accentBackground;
 }
 
+type TypeFilter = 'all' | 'sos' | 'planned';
+
+const typeFilters: { value: TypeFilter; label: string }[] = [
+  { value: 'all', label: 'Все' },
+  { value: 'sos', label: '🆘 SOS' },
+  { value: 'planned', label: '📋 Плановые' },
+];
+
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +73,8 @@ export default function OrdersScreen() {
     void loadOrders();
   }, [loadOrders]));
 
+  const visibleOrders = typeFilter === 'all' ? orders : orders.filter((order) => order.service_type === typeFilter);
+
   return (
     <Page scroll={false}>
       <View style={styles.pageContent}>
@@ -70,11 +82,14 @@ export default function OrdersScreen() {
         <Text style={styles.pageTitle}>
           {user?.role === 'master' ? 'Заявки клиентов' : 'Мои заявки'}
         </Text>
-        <Text style={[styles.mutedText, { marginBottom: 18 }]}>
+        <Text style={[styles.mutedText, { marginBottom: 14 }]}>
           {user?.role === 'master'
             ? 'Открытые заявки — нажмите, чтобы предложить цену'
             : 'Текущий статус и предложения от мастеров'}
         </Text>
+        <View style={{ marginBottom: 14 }}>
+          <ChipSelect options={typeFilters} value={typeFilter} onChange={(value) => setTypeFilter(value ?? 'all')} />
+        </View>
       </View>
       {loading ? (
         <ActivityIndicator style={{ marginTop: 36 }} color={colors.primary} />
@@ -83,9 +98,9 @@ export default function OrdersScreen() {
       ) : (
         <FlatList
           style={{ flex: 1 }}
-          data={orders}
+          data={visibleOrders}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={orders.length === 0 ? styles.emptyList : { padding: 20, paddingTop: 0, paddingBottom: 28 }}
+          contentContainerStyle={visibleOrders.length === 0 ? styles.emptyList : { padding: 20, paddingTop: 0, paddingBottom: 28 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => void loadOrders(true)} tintColor={colors.primary} />
           }
@@ -117,6 +132,22 @@ export default function OrdersScreen() {
                     {orderStatus[item.status]}
                   </Text>
                 </View>
+
+                {item.vehicle_make ? (
+                  <Text style={[styles.cardDescription, { marginTop: 6, color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
+                    🚗 {vehicleSummary({
+                      make: item.vehicle_make,
+                      model: item.vehicle_model,
+                      year: item.vehicle_year,
+                    }).title}
+                  </Text>
+                ) : null}
+
+                {item.scheduled_at ? (
+                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 12 }]}>
+                    📅 Желаемая дата: {formatDate(item.scheduled_at)}
+                  </Text>
+                ) : null}
 
                 {item.description ? (
                   <Text style={[styles.cardDescription, { marginTop: 6 }]} numberOfLines={2}>

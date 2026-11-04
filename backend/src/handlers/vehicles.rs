@@ -59,8 +59,9 @@ pub async fn create_vehicle(
 
     let vehicle = sqlx::query_as::<_, Vehicle>(
         r#"INSERT INTO vehicles
-           (owner_id, make, model, year, vin, plate_number, color, engine_type, transmission, current_mileage, notes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           (owner_id, make, model, year, vin, plate_number, color, engine_type, transmission, current_mileage, notes,
+            engine_volume, oil_type, tire_size)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
            RETURNING *"#,
     )
     .bind(owner_id)
@@ -74,6 +75,9 @@ pub async fn create_vehicle(
     .bind(&req.transmission)
     .bind(req.current_mileage)
     .bind(&req.notes)
+    .bind(&req.engine_volume)
+    .bind(&req.oil_type)
+    .bind(&req.tire_size)
     .fetch_one(&state.db)
     .await?;
 
@@ -110,8 +114,11 @@ pub async fn update_vehicle(
            transmission = COALESCE($8, transmission),
            current_mileage = COALESCE($9, current_mileage),
            notes = COALESCE($10, notes),
+           engine_volume = COALESCE($11, engine_volume),
+           oil_type = COALESCE($12, oil_type),
+           tire_size = COALESCE($13, tire_size),
            updated_at = NOW()
-           WHERE id = $11
+           WHERE id = $14
            RETURNING *"#,
     )
     .bind(&req.make)
@@ -124,6 +131,9 @@ pub async fn update_vehicle(
     .bind(&req.transmission)
     .bind(req.current_mileage)
     .bind(&req.notes)
+    .bind(&req.engine_volume)
+    .bind(&req.oil_type)
+    .bind(&req.tire_size)
     .bind(existing.id)
     .fetch_one(&state.db)
     .await?;

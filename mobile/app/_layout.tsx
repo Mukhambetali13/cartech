@@ -17,6 +17,10 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="sos" options={{ presentation: 'modal' }} />
         <Stack.Screen name="order-detail" />
+        <Stack.Screen name="planned" />
+        <Stack.Screen name="vehicle-detail" />
+        <Stack.Screen name="vehicle-form" />
+        <Stack.Screen name="service-entry" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
       </Stack>

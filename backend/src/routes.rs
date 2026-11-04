@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Router,
 };
 
@@ -7,7 +7,10 @@ use crate::handlers::{
     auth::{login, me, register, AppState},
     offers::{accept_offer, create_offer, decline_offer, list_offers},
     orders::{create_order, get_order, list_orders, rate_order, update_order_status},
-    service_book::{add_service_book_entry, dismiss_reminder, get_reminders, get_service_book},
+    service_book::{
+        add_service_book_entry, delete_service_book_entry, dismiss_reminder, get_reminders,
+        get_service_book,
+    },
     services::{create_service, get_service, list_categories, list_master_services, list_services},
     vehicles::{create_vehicle, delete_vehicle, get_vehicle, list_vehicles, update_vehicle},
 };
@@ -28,6 +31,10 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/vehicles/:id/service-book",
             get(get_service_book).post(add_service_book_entry),
+        )
+        .route(
+            "/vehicles/:vehicle_id/service-book/:entry_id",
+            delete(delete_service_book_entry),
         )
         .route("/vehicles/:id/reminders", get(get_reminders))
         .route(

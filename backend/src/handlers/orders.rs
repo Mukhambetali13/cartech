@@ -9,12 +9,17 @@ use crate::{
     handlers::auth::AppState,
     models::{
         order::{
-            CreateOrderRequest, Order, OrderFilter, OrderListItem, RateOrderRequest,
+            CreateOrderRequest, Order, OrderDetail, OrderFilter, OrderListItem, RateOrderRequest,
             UpdateOrderStatusRequest,
         },
         user::Claims,
     },
 };
+
+const ORDER_VEHICLE_COLUMNS: &str =
+    "v.make AS vehicle_make, v.model AS vehicle_model, v.year AS vehicle_year,
+     v.engine_type AS vehicle_engine_type, v.engine_volume AS vehicle_engine_volume,
+     v.transmission AS vehicle_transmission, v.current_mileage AS vehicle_mileage";
 
 pub async fn list_orders(
     State(state): State<AppState>,
@@ -25,20 +30,26 @@ pub async fn list_orders(
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
 
     let mut query = if claims.role == "master" {
-        "SELECT o.*, COALESCE(mp.company_name, client.full_name) AS counterparty_name
+        format!(
+            "SELECT o.*, COALESCE(mp.company_name, client.full_name) AS counterparty_name,
+                {ORDER_VEHICLE_COLUMNS}
          FROM orders o
          JOIN users client ON client.id = o.client_id
+         LEFT JOIN vehicles v ON v.id = o.vehicle_id
          LEFT JOIN users master ON master.id = o.master_id
          LEFT JOIN master_profiles mp ON mp.user_id = master.id
          WHERE (o.master_id = $1 OR (o.status = 'open' AND o.master_id IS NULL))"
-            .to_string()
+        )
     } else {
-        "SELECT o.*, COALESCE(mp.company_name, master.full_name) AS counterparty_name
+        format!(
+            "SELECT o.*, COALESCE(mp.company_name, master.full_name) AS counterparty_name,
+                {ORDER_VEHICLE_COLUMNS}
          FROM orders o
+         LEFT JOIN vehicles v ON v.id = o.vehicle_id
          LEFT JOIN users master ON master.id = o.master_id
          LEFT JOIN master_profiles mp ON mp.user_id = master.id
          WHERE o.client_id = $1"
-            .to_string()
+        )
     };
 
     let mut conditions = vec![];
@@ -74,25 +85,31 @@ pub async fn get_order(
     State(state): State<AppState>,
     claims: Claims,
     Path(order_id): Path<Uuid>,
-) -> AppResult<Json<Order>> {
+) -> AppResult<Json<OrderDetail>> {
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+
+    let select = format!(
+        "SELECT o.*, {ORDER_VEHICLE_COLUMNS}
+         FROM orders o
+         LEFT JOIN vehicles v ON v.id = o.vehicle_id"
+    );
 
     // Masters can view any open order or orders assigned to them
     // Clients can only view their own orders
     let order = if claims.role == "master" {
-        sqlx::query_as::<_, Order>(
-            "SELECT * FROM orders WHERE id = $1 AND (master_id = $2 OR status = 'open')",
-        )
+        sqlx::query_as::<_, OrderDetail>(&format!(
+            "{select} WHERE o.id = $1 AND (o.master_id = $2 OR o.status = 'open')"
+        ))
         .bind(order_id)
         .bind(user_id)
         .fetch_optional(&state.db)
         .await?
         .ok_or_else(|| AppError::NotFound("Order not found".to_string()))?
     } else {
-        sqlx::query_as::<_, Order>(
-            "SELECT * FROM orders WHERE id = $1 AND client_id = $2",
-        )
+        sqlx::query_as::<_, OrderDetail>(&format!(
+            "{select} WHERE o.id = $1 AND o.client_id = $2"
+        ))
         .bind(order_id)
         .bind(user_id)
         .fetch_optional(&state.db)

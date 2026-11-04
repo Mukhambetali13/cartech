@@ -19,6 +19,7 @@ import { apiErrorMessage, offersApi, ordersApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { SectionCard, styles as ui } from '../src/components/ui';
 import { colors } from '../src/theme';
+import { formatDate, formatKm, vehicleSummary } from '../src/maintenance';
 
 const statusLabel: Record<string, string> = {
   open: 'Открыта',
@@ -200,6 +201,9 @@ export default function OrderDetailScreen() {
           {order.address ? (
             <Text style={[ui.mutedText, { marginTop: 6 }]}>📍 {order.address}</Text>
           ) : null}
+          {order.scheduled_at ? (
+            <Text style={[ui.mutedText, { marginTop: 6 }]}>📅 Желаемая дата: {formatDate(order.scheduled_at)}</Text>
+          ) : null}
           {order.price_agreed != null ? (
             <Text style={[ui.price, { marginTop: 10 }]}>
               {Number(order.price_agreed).toLocaleString('ru-RU')} ₸  — согласованная цена
@@ -209,6 +213,27 @@ export default function OrderDetailScreen() {
             {new Date(order.created_at).toLocaleString('ru-RU')}
           </Text>
         </SectionCard>
+
+        {/* ── Vehicle ── */}
+        {order.vehicle_make ? (
+          <SectionCard style={{ marginBottom: 16 }}>
+            <Text style={s.sectionHead}>🚗 Автомобиль клиента</Text>
+            <Text style={ui.cardTitle}>
+              {vehicleSummary({ make: order.vehicle_make, model: order.vehicle_model, year: order.vehicle_year }).title}
+            </Text>
+            {(() => {
+              const details = vehicleSummary({
+                engine_volume: order.vehicle_engine_volume,
+                engine_type: order.vehicle_engine_type,
+                transmission: order.vehicle_transmission,
+              }).details;
+              return details ? <Text style={ui.cardDescription}>{details}</Text> : null;
+            })()}
+            {order.vehicle_mileage != null ? (
+              <Text style={ui.cardDescription}>Пробег: {formatKm(order.vehicle_mileage)}</Text>
+            ) : null}
+          </SectionCard>
+        ) : null}
 
         {/* ── Master: status actions ── */}
         {isMaster && order.status === 'accepted' && order.master_id === user?.id && (

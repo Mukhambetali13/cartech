@@ -72,6 +72,40 @@ export function EmptyState({ message, actionLabel, onAction }: {
   );
 }
 
+export function ChipSelect<T extends string>({ options, value, onChange, allowEmpty = false }: {
+  options: { value: T; label: string }[];
+  value: T | null | undefined;
+  onChange: (value: T | null) => void;
+  allowEmpty?: boolean;
+}) {
+  return (
+    <View style={styles.chipRow}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: selected }}
+            onPress={() => onChange(selected && allowEmpty ? null : option.value)}
+            style={[styles.chip, selected && styles.chipSelected]}
+          >
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export function BackButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={{ marginBottom: 14, alignSelf: 'flex-start' }}>
+      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>← Назад</Text>
+    </Pressable>
+  );
+}
+
 export const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   pageContent: { padding: 20, paddingTop: 24, paddingBottom: 28 },
@@ -220,4 +254,18 @@ export const styles = StyleSheet.create({
     marginTop: 14,
   },
   secondaryButtonText: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+  },
+  chipSelected: { borderColor: colors.primary, backgroundColor: colors.accentBackground },
+  chipText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: colors.primaryDark },
+  textArea: { minHeight: 80, textAlignVertical: 'top', paddingTop: 12 },
+  rowGap: { flexDirection: 'row', gap: 10 },
 });

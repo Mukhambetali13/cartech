@@ -209,3 +209,29 @@ pub async fn dismiss_reminder(
 
     Ok(Json(serde_json::json!({ "message": "Reminder dismissed" })))
 }
+
+pub async fn delete_service_book_entry(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path((vehicle_id, entry_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    let owner_id = Uuid::parse_str(&claims.sub)
+        .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+
+    let result = sqlx::query(
+        r#"DELETE FROM service_book_entries e
+           USING vehicles v
+           WHERE e.id = $1 AND e.vehicle_id = $2 AND v.id = e.vehicle_id AND v.owner_id = $3"#,
+    )
+    .bind(entry_id)
+    .bind(vehicle_id)
+    .bind(owner_id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("Service book entry not found".to_string()));
+    }
+
+    Ok(Json(serde_json::json!({ "message": "Service book entry deleted" })))
+}

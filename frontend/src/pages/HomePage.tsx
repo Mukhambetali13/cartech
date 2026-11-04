@@ -7,6 +7,8 @@ const sosServices = [
   { icon: '💻', name: 'Диагностика', slug: 'diagnostics' },
   { icon: '🔓', name: 'Вскрытие авто', slug: 'unlock' },
   { icon: '⛽', name: 'Подвоз топлива', slug: 'fuel-delivery' },
+  { icon: '🚛', name: 'Эвакуатор', slug: 'tow-truck' },
+  { icon: '🛞', name: 'Шиномонтаж', slug: 'mobile-tire-service' },
 ];
 
 const plannedServices = [

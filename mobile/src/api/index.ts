@@ -4,12 +4,17 @@ import type {
   AuthResponse,
   CreateOfferRequest,
   CreateOrderRequest,
+  CreateServiceBookEntryRequest,
+  CreateVehicleRequest,
   LoginRequest,
   Order,
   OrderOffer,
   OrderOfferWithMaster,
   RegisterRequest,
   Service,
+  ServiceBookEntry,
+  ServiceBookSummary,
+  ServiceCategory,
   User,
   Vehicle,
 } from '@shared/types/index';
@@ -26,10 +31,29 @@ export const authApi = {
 export const servicesApi = {
   list: (params?: { service_type?: 'sos' | 'planned' }) =>
     api.get<Service[]>('/services', { params }).then((response) => response.data),
+  categories: () =>
+    api.get<ServiceCategory[]>('/services/categories').then((response) => response.data),
 };
 
 export const vehiclesApi = {
   list: () => api.get<Vehicle[]>('/vehicles').then((response) => response.data),
+  get: (id: string) => api.get<Vehicle>(`/vehicles/${id}`).then((response) => response.data),
+  create: (data: CreateVehicleRequest) =>
+    api.post<Vehicle>('/vehicles', data).then((response) => response.data),
+  update: (id: string, data: Partial<CreateVehicleRequest>) =>
+    api.put<Vehicle>(`/vehicles/${id}`, data).then((response) => response.data),
+  remove: (id: string) => api.delete(`/vehicles/${id}`).then((response) => response.data),
+};
+
+export const serviceBookApi = {
+  get: (vehicleId: string) =>
+    api.get<ServiceBookSummary>(`/vehicles/${vehicleId}/service-book`).then((response) => response.data),
+  add: (vehicleId: string, data: CreateServiceBookEntryRequest) =>
+    api
+      .post<ServiceBookEntry>(`/vehicles/${vehicleId}/service-book`, data)
+      .then((response) => response.data),
+  remove: (vehicleId: string, entryId: string) =>
+    api.delete(`/vehicles/${vehicleId}/service-book/${entryId}`).then((response) => response.data),
 };
 
 export const ordersApi = {

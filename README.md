@@ -112,6 +112,23 @@ cd mobile && npm install && npx expo start
   cd mobile && npx expo start --clear
   ```
 
+#### Сборка APK для телефона
+
+Нужны JDK 17 и Android SDK в `~/Android/Sdk`. Адрес API вшивается в APK при
+сборке, поэтому укажите IP компьютера в локальной сети:
+
+```bash
+cd mobile && EXPO_PUBLIC_API_URL=http://192.168.8.196:8080/api npx expo prebuild --platform android --clean
+```
+
+```bash
+cd mobile/android && JAVA_HOME=~/.local/jdk-17 EXPO_PUBLIC_API_URL=http://192.168.8.196:8080/api ./gradlew assembleRelease
+```
+
+Готовый файл: `mobile/android/app/build/outputs/apk/release/app-release.apk`.
+Он подписан отладочным ключом — годится для тестов, но не для Google Play.
+Папка `mobile/android` генерируется и в git не попадает.
+
 ## Ежедневный запуск
 
 Когда всё уже установлено, достаточно четырёх терминалов:
