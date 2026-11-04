@@ -20,6 +20,8 @@ pub struct Order {
     pub longitude: Option<f64>,
     pub scheduled_at: Option<DateTime<Utc>>,
     pub price_agreed: Option<BigDecimal>,
+    /// Price set by the client; masters may offer from it up to +MAX_OFFER_MARKUP
+    pub client_price: Option<BigDecimal>,
     pub payment_status: Option<String>,
     pub client_rating: Option<i32>,
     pub client_review: Option<String>,
@@ -71,6 +73,7 @@ pub struct CreateOrderRequest {
     pub latitude: Option<f64>,
     pub longitude: Option<f64>,
     pub scheduled_at: Option<DateTime<Utc>>,
+    pub client_price: f64,
 }
 
 #[derive(Debug, Deserialize)]

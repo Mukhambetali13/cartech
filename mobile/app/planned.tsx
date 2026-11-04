@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { ServiceCategory } from '@shared/types/index';
+import { MAX_OFFER_MARKUP, type ServiceCategory } from '@shared/types/index';
 import { apiErrorMessage, ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { BackButton, EmptyState, Field, SectionCard, styles } from '../src/components/ui';
@@ -21,6 +21,7 @@ export default function PlannedRequestScreen() {
   const [date, setDate] = useState('');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sending, setSending] = useState(false);
@@ -59,6 +60,11 @@ export default function PlannedRequestScreen() {
       setError('Выберите автомобиль — мастеру нужны марка, модель и год.');
       return;
     }
+    const clientPrice = parseFloat(price.replace(/\s/g, '').replace(',', '.'));
+    if (isNaN(clientPrice) || clientPrice <= 0) {
+      setError('Укажите, сколько вы готовы заплатить.');
+      return;
+    }
     let scheduledAt: string | undefined;
     if (date.trim()) {
       const parsed = parseDate(date);
@@ -77,13 +83,14 @@ export default function PlannedRequestScreen() {
     try {
       await ordersApi.create({
         service_type: 'planned',
+        client_price: clientPrice,
         title: category.name,
         vehicle_id: vehicleId,
         description: description.trim() || undefined,
         address: address.trim() || undefined,
         scheduled_at: scheduledAt,
       });
-      Alert.alert('Заявка отправлена', 'Мастера увидят данные вашего авто и предложат цену.', [
+      Alert.alert('Заявка отправлена', 'Мастера увидят данные вашего авто и согласятся с вашей ценой или предложат свою.', [
         { text: 'Посмотреть заявки', onPress: () => router.replace('/(tabs)/orders') },
       ]);
     } catch (cause) {
@@ -111,7 +118,7 @@ export default function PlannedRequestScreen() {
         <Text style={styles.eyebrow}>ПЛАНОВОЕ ТО</Text>
         <Text style={styles.pageTitle}>Плановые работы</Text>
         <Text style={[styles.mutedText, { marginBottom: 8 }]}>
-          Замена масла, ремонт ходовой, капремонт двигателя и другое — мастера предложат цену и время.
+          Замена масла, ремонт ходовой, капремонт двигателя и другое — укажите свою цену, мастера согласятся или предложат свою.
         </Text>
 
         <Text style={styles.sectionTitle}>Что нужно сделать?</Text>
@@ -155,6 +162,18 @@ export default function PlannedRequestScreen() {
         <VehiclePicker value={vehicleId} onChange={setVehicleId} required />
 
         <Text style={styles.sectionTitle}>Детали</Text>
+        <Field label="Ваша цена (₸) *">
+          <TextInput
+            style={styles.input}
+            value={price}
+            onChangeText={setPrice}
+            placeholder="Например: 15000"
+            keyboardType="numeric"
+          />
+          <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
+            Мастер может поднять цену максимум на {MAX_OFFER_MARKUP.toLocaleString('ru-RU')} ₸.
+          </Text>
+        </Field>
         <Field label="Желаемая дата">
           <TextInput
             style={styles.input}

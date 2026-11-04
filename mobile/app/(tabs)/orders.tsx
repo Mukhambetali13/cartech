@@ -164,6 +164,13 @@ export default function OrdersScreen() {
                 <View style={[styles.rowBetween, { marginTop: 10, alignItems: 'center' }]}>
                   {item.price_agreed != null ? (
                     <Text style={styles.price}>{Number(item.price_agreed).toLocaleString('ru-RU')} ₸</Text>
+                  ) : item.client_price != null ? (
+                    <Text style={[styles.price, { marginTop: 0 }]}>
+                      {Number(item.client_price).toLocaleString('ru-RU')} ₸
+                      <Text style={{ fontWeight: '500', fontSize: 12, color: colors.muted }}>
+                        {user?.role === 'client' ? ' — ваша цена' : ' — цена клиента'}
+                      </Text>
+                    </Text>
                   ) : (
                     <View />
                   )}

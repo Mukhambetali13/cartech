@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { ServiceCategory } from '@shared/types/index';
+import { MAX_OFFER_MARKUP, type ServiceCategory } from '@shared/types/index';
 import { apiErrorMessage } from '../src/api/client';
 import { ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
@@ -28,6 +28,7 @@ export default function SosRequestScreen() {
   const [address, setAddress] = useState('');
   const [destination, setDestination] = useState('');
   const [vehicleId, setVehicleId] = useState<string | null>(null);
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -73,17 +74,24 @@ export default function SosRequestScreen() {
       return;
     }
 
+    const clientPrice = parseFloat(price.replace(/\s/g, '').replace(',', '.'));
+    if (isNaN(clientPrice) || clientPrice <= 0) {
+      setError('Укажите, сколько вы готовы заплатить.');
+      return;
+    }
+
     setError('');
     setSending(true);
     try {
       await ordersApi.create({
         service_type: 'sos',
+        client_price: clientPrice,
         title: category.name,
         vehicle_id: vehicleId ?? undefined,
         description: isTowTruck ? `Куда доставить: ${destination.trim()}` : undefined,
         address: address.trim(),
       });
-      Alert.alert('Заявка отправлена', 'Заявку увидят мастера рядом — ждите предложений с ценой.', [
+      Alert.alert('Заявка отправлена', 'Заявку увидят мастера рядом — они согласятся с вашей ценой или предложат свою.', [
         { text: 'Посмотреть заказ', onPress: () => router.replace('/(tabs)/orders') },
       ]);
     } catch (cause) {
@@ -110,7 +118,7 @@ export default function SosRequestScreen() {
       <Text style={styles.eyebrow}>СРОЧНАЯ ПОМОЩЬ</Text>
       <Text style={styles.pageTitle}>SOS-заявка</Text>
       <Text style={[styles.mutedText, { marginBottom: 20 }]}>
-        Выберите, какая помощь нужна, и укажите адрес — мастера предложат цену, вы выберете лучшего.
+        Выберите, какая помощь нужна, укажите адрес и свою цену — мастера откликнутся, вы выберете лучшего.
       </Text>
 
       <Text style={styles.sectionTitle}>Какая помощь нужна?</Text>
@@ -190,6 +198,22 @@ export default function SosRequestScreen() {
           />
         </>
       ) : null}
+
+      <Text style={styles.sectionTitle}>Ваша цена (₸)</Text>
+      <TextInput
+        accessibilityLabel="Ваша цена"
+        style={styles.input}
+        value={price}
+        onChangeText={(value) => {
+          setPrice(value);
+          if (error) setError('');
+        }}
+        placeholder="Например: 5000"
+        keyboardType="numeric"
+      />
+      <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
+        Мастер может согласиться или предложить больше — но не дороже, чем на {MAX_OFFER_MARKUP.toLocaleString('ru-RU')} ₸.
+      </Text>
 
       <Text style={styles.sectionTitle}>Автомобиль</Text>
       <Text style={[styles.mutedText, { marginBottom: 10, fontSize: 13 }]}>

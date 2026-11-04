@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { offersApi, ordersApi } from '../api';
 import { useAuthStore } from '../store/authStore';
-import type { Order, OrderOfferWithMaster } from '../types';
+import { MAX_OFFER_MARKUP, type Order, type OrderOfferWithMaster } from '../types';
 
 const statusLabels: Record<string, string> = {
   open: 'Открыта',
@@ -68,12 +68,19 @@ export default function OrderDetailPage() {
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
+  const clientPrice = order?.client_price != null ? Number(order.client_price) : null;
+  const maxOfferPrice = clientPrice != null ? clientPrice + MAX_OFFER_MARKUP : null;
+
   const handleSubmitOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
     const price = parseFloat(offerPrice);
     if (isNaN(price) || price <= 0) {
       setOfferError('Введите корректную цену больше нуля');
+      return;
+    }
+    if (clientPrice != null && maxOfferPrice != null && (price < clientPrice || price > maxOfferPrice)) {
+      setOfferError(`Цена должна быть от ${clientPrice.toLocaleString('ru-RU')} до ${maxOfferPrice.toLocaleString('ru-RU')} ₸`);
       return;
     }
     setOfferSubmitting(true);
@@ -191,6 +198,16 @@ export default function OrderDetailPage() {
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Согласованная цена</div>
               </div>
             )}
+            {!order.price_agreed && clientPrice != null && (
+              <div style={{ textAlign: 'right' }}>
+                <div className="price" style={{ fontSize: '1.4rem' }}>
+                  {clientPrice.toLocaleString('ru-RU')} ₸
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  {user?.role === 'client' ? 'Ваша цена' : 'Цена клиента'}
+                </div>
+              </div>
+            )}
           </div>
 
           {order.description && (
@@ -285,6 +302,12 @@ export default function OrderDetailPage() {
               </div>
             )}
 
+            {clientPrice != null && maxOfferPrice != null && (
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>
+                Клиент предлагает {clientPrice.toLocaleString('ru-RU')} ₸. Согласитесь или назовите свою цену — до {maxOfferPrice.toLocaleString('ru-RU')} ₸.
+              </p>
+            )}
+
             <form onSubmit={(e) => { void handleSubmitOffer(e); }}>
               <div style={{ display: 'flex', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
                 <div className="form-group" style={{ flex: '1 1 160px' }}>
@@ -293,9 +316,10 @@ export default function OrderDetailPage() {
                     id="offer-price"
                     className="form-input"
                     type="number"
-                    min="1"
+                    min={clientPrice ?? 1}
+                    max={maxOfferPrice ?? undefined}
                     step="0.01"
-                    placeholder="Например: 2500"
+                    placeholder={clientPrice != null ? String(clientPrice) : 'Например: 2500'}
                     value={offerPrice}
                     onChange={(e) => setOfferPrice(e.target.value)}
                     required

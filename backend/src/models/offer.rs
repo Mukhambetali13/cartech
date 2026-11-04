@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+/// Насколько мастер может поднять цену клиента (₸)
+pub const MAX_OFFER_MARKUP: i64 = 10_000;
+
 /// Статус предложения мастера
 /// pending  — ожидает ответа клиента
 /// accepted — клиент принял предложение

@@ -2,6 +2,8 @@ use axum::{
     extract::{Path, Query, State},
     Json,
 };
+use bigdecimal::BigDecimal;
+use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::{
@@ -161,6 +163,14 @@ pub async fn create_order(
         ));
     }
 
+    if !req.client_price.is_finite() || req.client_price <= 0.0 {
+        return Err(AppError::BadRequest(
+            "Client price must be greater than zero".to_string(),
+        ));
+    }
+    let client_price = BigDecimal::from_str(&req.client_price.to_string())
+        .map_err(|_| AppError::BadRequest("Invalid price format".to_string()))?;
+
     // Validate vehicle ownership if provided
     if let Some(vehicle_id) = req.vehicle_id {
         let count = sqlx::query_scalar::<_, i64>(
@@ -179,8 +189,8 @@ pub async fn create_order(
     let order = sqlx::query_as::<_, Order>(
         r#"INSERT INTO orders
            (client_id, master_id, vehicle_id, service_id, service_type, title, description,
-            address, latitude, longitude, scheduled_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            address, latitude, longitude, scheduled_at, client_price)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
            RETURNING *"#,
     )
     .bind(client_id)
@@ -194,6 +204,7 @@ pub async fn create_order(
     .bind(req.latitude)
     .bind(req.longitude)
     .bind(req.scheduled_at)
+    .bind(client_price)
     .fetch_one(&state.db)
     .await?;
 

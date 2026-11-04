@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ordersApi, servicesApi, vehiclesApi } from '../api';
 import { useAuthStore } from '../store/authStore';
-import type { Service, ServiceType, Vehicle } from '../types';
+import { MAX_OFFER_MARKUP, type Service, type ServiceType, type Vehicle } from '../types';
 
 export default function NewOrderPage() {
   const { user } = useAuthStore();
@@ -17,6 +17,7 @@ export default function NewOrderPage() {
   const [address, setAddress] = useState('');
   const [vehicleId, setVehicleId] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -47,10 +48,16 @@ export default function NewOrderPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    const clientPrice = parseFloat(price);
+    if (isNaN(clientPrice) || clientPrice <= 0) {
+      setError('Укажите, сколько вы готовы заплатить.');
+      return;
+    }
     setError('');
     setSaving(true);
     try {
       await ordersApi.create({
+        client_price: clientPrice,
         vehicle_id: vehicleId || undefined,
         service_id: service?.id,
         service_type: serviceType,
@@ -121,6 +128,13 @@ export default function NewOrderPage() {
             <div className="form-group">
               <label className="form-label" htmlFor="order-description">Описание</label>
               <textarea id="order-description" className="form-input" rows={4} value={description} onChange={(event) => setDescription(event.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="order-price">Ваша цена (₸)</label>
+              <input id="order-price" className="form-input" type="number" min="1" step="1" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Например: 15000" required />
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 4 }}>
+                Мастер может согласиться или предложить больше — но не дороже, чем на {MAX_OFFER_MARKUP.toLocaleString('ru-RU')} ₸.
+              </div>
             </div>
             <div className="grid-2">
               <div className="form-group">

@@ -11,7 +11,7 @@ use crate::{
     errors::{AppError, AppResult},
     handlers::auth::AppState,
     models::{
-        offer::{CreateOfferRequest, OrderOffer, OrderOfferWithMaster},
+        offer::{CreateOfferRequest, OrderOffer, OrderOfferWithMaster, MAX_OFFER_MARKUP},
         user::Claims,
     },
 };
@@ -108,8 +108,8 @@ pub async fn create_offer(
     }
 
     // Проверяем, что заявка существует и открыта
-    let order_status = sqlx::query_scalar::<_, String>(
-        "SELECT status FROM orders WHERE id = $1",
+    let (order_status, client_price) = sqlx::query_as::<_, (String, Option<BigDecimal>)>(
+        "SELECT status, client_price FROM orders WHERE id = $1",
     )
     .bind(order_id)
     .fetch_optional(&state.db)
@@ -124,6 +124,18 @@ pub async fn create_offer(
 
     let price = BigDecimal::from_str(&req.price.to_string())
         .map_err(|_| AppError::BadRequest("Invalid price format".to_string()))?;
+
+    // Мастер может согласиться с ценой клиента или поднять её максимум на MAX_OFFER_MARKUP
+    if let Some(client_price) = client_price {
+        let max_price = &client_price + BigDecimal::from(MAX_OFFER_MARKUP);
+        if price < client_price || price > max_price {
+            return Err(AppError::BadRequest(format!(
+                "Цена должна быть от {} до {} ₸",
+                client_price.with_scale(0),
+                max_price.with_scale(0)
+            )));
+        }
+    }
 
     // UPSERT: если мастер уже делал предложение — обновляем
     let offer = sqlx::query_as::<_, OrderOffer>(

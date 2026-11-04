@@ -91,6 +91,7 @@ export interface Order {
   longitude?: number;
   scheduled_at?: string;
   price_agreed?: number;
+  client_price?: number;
   payment_status?: string;
   client_rating?: number;
   client_review?: string;
@@ -105,6 +106,9 @@ export interface Order {
   vehicle_transmission?: string;
   vehicle_mileage?: number;
 }
+
+/** Насколько мастер может поднять цену клиента (₸) — совпадает с бэкендом */
+export const MAX_OFFER_MARKUP = 10_000;
 
 export type OfferStatus = 'pending' | 'accepted' | 'declined';
 
@@ -210,6 +214,7 @@ export interface CreateOrderRequest {
   latitude?: number;
   longitude?: number;
   scheduled_at?: string;
+  client_price: number;
 }
 
 export interface CreateServiceBookEntryRequest {

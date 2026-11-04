@@ -14,12 +14,14 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Order, OrderOfferWithMaster } from '@shared/types/index';
+import { MAX_OFFER_MARKUP, type Order, type OrderOfferWithMaster } from '@shared/types/index';
 import { apiErrorMessage, offersApi, ordersApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
 import { SectionCard, styles as ui } from '../src/components/ui';
 import { colors } from '../src/theme';
 import { formatDate, formatKm, vehicleSummary } from '../src/maintenance';
+
+const money = (value: number) => `${value.toLocaleString('ru-RU')} ₸`;
 
 const statusLabel: Record<string, string> = {
   open: 'Открыта',
@@ -84,11 +86,18 @@ export default function OrderDetailScreen() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const submitOffer = async () => {
+  const clientPrice = order?.client_price != null ? Number(order.client_price) : null;
+  const maxOfferPrice = clientPrice != null ? clientPrice + MAX_OFFER_MARKUP : null;
+
+  const submitOffer = async (fixedPrice?: number) => {
     Keyboard.dismiss();
-    const price = parseFloat(offerPrice.replace(',', '.'));
+    const price = fixedPrice ?? parseFloat(offerPrice.replace(/\s/g, '').replace(',', '.'));
     if (isNaN(price) || price <= 0) {
       setOfferError('Введите сумму больше нуля');
+      return;
+    }
+    if (clientPrice != null && maxOfferPrice != null && (price < clientPrice || price > maxOfferPrice)) {
+      setOfferError(`Цена должна быть от ${money(clientPrice)} до ${money(maxOfferPrice)}`);
       return;
     }
     setOfferSubmitting(true);
@@ -208,6 +217,10 @@ export default function OrderDetailScreen() {
             <Text style={[ui.price, { marginTop: 10 }]}>
               {Number(order.price_agreed).toLocaleString('ru-RU')} ₸  — согласованная цена
             </Text>
+          ) : clientPrice != null ? (
+            <Text style={[ui.price, { marginTop: 10 }]}>
+              {money(clientPrice)}  — {isClient ? 'ваша цена' : 'цена клиента'}
+            </Text>
           ) : null}
           <Text style={[ui.mutedText, { marginTop: 8, fontSize: 12 }]}>
             {new Date(order.created_at).toLocaleString('ru-RU')}
@@ -302,11 +315,26 @@ export default function OrderDetailScreen() {
               <Text style={s.successText}>✅ Предложение отправлено! Ожидайте ответа клиента.</Text>
             )}
 
-            <Text style={s.fieldLabel}>Цена (₸) *</Text>
+            {clientPrice != null && maxOfferPrice != null && (
+              <>
+                <Text style={[ui.mutedText, { marginBottom: 10 }]}>
+                  Клиент предлагает {money(clientPrice)}. Согласитесь или назовите свою цену — до {money(maxOfferPrice)}.
+                </Text>
+                <Pressable
+                  style={[ui.primaryButton, { marginTop: 0, marginBottom: 14 }, offerSubmitting && ui.disabledButton]}
+                  disabled={offerSubmitting}
+                  onPress={() => void submitOffer(clientPrice)}
+                >
+                  <Text style={ui.primaryButtonText}>🤝 Согласиться на {money(clientPrice)}</Text>
+                </Pressable>
+              </>
+            )}
+
+            <Text style={s.fieldLabel}>{clientPrice != null ? 'Своя цена (₸)' : 'Цена (₸) *'}</Text>
             <TextInput
               ref={priceRef}
               style={ui.input}
-              placeholder="Например: 2500"
+              placeholder={maxOfferPrice != null ? `До ${money(maxOfferPrice)}` : 'Например: 2500'}
               placeholderTextColor={colors.muted}
               keyboardType="numeric"
               value={offerPrice}
@@ -421,9 +449,18 @@ export default function OrderDetailScreen() {
                       {new Date(offer.created_at).toLocaleString('ru-RU')}
                     </Text>
                   </View>
-                  <Text style={[ui.price, { fontSize: 16, flexShrink: 0 }]}>
-                    {Number(offer.price).toLocaleString('ru-RU')} ₸
-                  </Text>
+                  <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
+                    <Text style={[ui.price, { fontSize: 16 }]}>
+                      {Number(offer.price).toLocaleString('ru-RU')} ₸
+                    </Text>
+                    {clientPrice != null && (
+                      <Text style={[ui.mutedText, { fontSize: 12, marginTop: 2 }]}>
+                        {Number(offer.price) > clientPrice
+                          ? `+${money(Number(offer.price) - clientPrice)} к вашей`
+                          : 'по вашей цене'}
+                      </Text>
+                    )}
+                  </View>
                 </View>
 
                 {isOpen && (
