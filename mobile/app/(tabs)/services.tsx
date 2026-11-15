@@ -34,7 +34,6 @@ export default function ServicesScreen() {
   return (
     <Page scroll={false}>
       <View style={styles.pageContent}>
-        <Text style={styles.eyebrow}>AUTOMARKET</Text>
         <Text style={styles.pageTitle}>{t('services.title')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 18 }]}>{t('services.subtitle')}</Text>
       </View>

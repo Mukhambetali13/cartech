@@ -4,11 +4,12 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useT } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
+// Цветные эмодзи понятнее контурных значков; активную вкладку выделяем яркостью и подписью
 const tabIcons: Record<string, string> = {
-  index: '⌂',
-  services: '⌕',
+  index: '🏠',
+  services: '🛠️',
   vehicles: '🚗',
-  orders: '▤',
+  orders: '📋',
 };
 
 export default function TabsLayout() {
@@ -25,10 +26,10 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { height: 62, paddingTop: 6, paddingBottom: 7, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 21, lineHeight: 24 }}>{tabIcons[route.name]}</Text>
+        tabBarStyle: { height: 72, paddingTop: 8, paddingBottom: 10, borderTopColor: colors.border },
+        tabBarLabelStyle: { fontSize: 13, fontWeight: '700' },
+        tabBarIcon: ({ focused }) => (
+          <Text style={{ fontSize: 24, lineHeight: 28, opacity: focused ? 1 : 0.45 }}>{tabIcons[route.name]}</Text>
         ),
       })}
     >

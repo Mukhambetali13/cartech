@@ -16,7 +16,7 @@ import { MAX_OFFER_MARKUP } from '../src/pricing';
 import { apiErrorMessage } from '../src/api/client';
 import { ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
-import { EmptyState, SectionCard, styles } from '../src/components/ui';
+import { BackButton, EmptyState, SectionCard, StepTitle, styles } from '../src/components/ui';
 import { VehiclePicker } from '../src/components/VehiclePicker';
 import { localized, NUMBER_LOCALE, useLanguage, useT } from '../src/i18n';
 import { pickCurrentLocation, type PickedLocation } from '../src/location';
@@ -146,13 +146,13 @@ export default function SosRequestScreen() {
       contentContainerStyle={[styles.pageContent, { paddingTop: styles.pageContent.paddingTop + insets.top }]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.eyebrow}>{t('sos.eyebrow')}</Text>
+      <BackButton onPress={() => router.back()} />
       <Text style={styles.pageTitle}>{t('sos.title')}</Text>
       <Text style={[styles.mutedText, { marginBottom: 20 }]}>
         {t('sos.intro')}
       </Text>
 
-      <Text style={styles.sectionTitle}>{t('sos.whatHelp')}</Text>
+      <StepTitle step={1} title={t('sos.whatHelp')} />
       {loading ? (
         <ActivityIndicator style={{ marginVertical: 28 }} color={colors.primary} />
       ) : loadError ? (
@@ -195,19 +195,17 @@ export default function SosRequestScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>
-        {isTowTruck ? t('sos.pickupQuestion') : t('sos.whereQuestion')}
-      </Text>
+      <StepTitle step={2} title={isTowTruck ? t('sos.pickupQuestion') : t('sos.whereQuestion')} />
       <Pressable
         accessibilityRole="button"
-        style={[styles.secondaryButton, { alignItems: 'center', marginBottom: 10 }, locating && styles.disabledButton]}
+        style={[styles.primaryButton, { marginTop: 0, marginBottom: 10 }, locating && styles.disabledButton]}
         disabled={locating}
         onPress={() => void detectLocation()}
       >
         {locating ? (
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.secondaryButtonText}>{t('location.detect')}</Text>
+          <Text style={styles.primaryButtonText}>{t('location.detect')}</Text>
         )}
       </Pressable>
       <TextInput
@@ -222,7 +220,7 @@ export default function SosRequestScreen() {
         autoCapitalize="sentences"
         returnKeyType="done"
       />
-      <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
+      <Text style={[styles.mutedText, { fontSize: 14, marginTop: 7 }, location && { color: colors.success, fontWeight: '700' }]}>
         {location ? t('location.attached') : t('sos.addressExample')}
       </Text>
 
@@ -244,7 +242,7 @@ export default function SosRequestScreen() {
         </>
       ) : null}
 
-      <Text style={styles.sectionTitle}>{t('price.your')}</Text>
+      <StepTitle step={3} title={t('sos.priceQuestion')} />
       <TextInput
         accessibilityLabel={t('price.your')}
         style={styles.input}
@@ -256,12 +254,12 @@ export default function SosRequestScreen() {
         placeholder={t('sos.pricePlaceholder')}
         keyboardType="numeric"
       />
-      <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
+      <Text style={[styles.mutedText, { fontSize: 14, marginTop: 7 }]}>
         {t('price.sosHint', { max: MAX_OFFER_MARKUP.toLocaleString(NUMBER_LOCALE) })}
       </Text>
 
-      <Text style={styles.sectionTitle}>{t('common.vehicle')}</Text>
-      <Text style={[styles.mutedText, { marginBottom: 10, fontSize: 13 }]}>
+      <StepTitle step={4} title={t('sos.vehicleQuestion')} />
+      <Text style={[styles.mutedText, { marginBottom: 10, fontSize: 14 }]}>
         {t('sos.vehicleHint')}
       </Text>
       <VehiclePicker value={vehicleId} onChange={setVehicleId} />

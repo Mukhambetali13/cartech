@@ -126,7 +126,7 @@ export default function SettingsScreen() {
           <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(publicPageUrl('/privacy'))}>
             <Text style={styles.link}>{t('settings.privacy')}</Text>
           </Pressable>
-          <Text style={[styles.mutedText, { marginTop: 10, fontSize: 12 }]}>
+          <Text style={[styles.mutedText, { marginTop: 10, fontSize: 14 }]}>
             {t('settings.version', { version: Constants.expoConfig?.version ?? '—' })}
           </Text>
         </SectionCard>

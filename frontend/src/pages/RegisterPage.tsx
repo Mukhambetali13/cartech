@@ -49,7 +49,7 @@ export default function RegisterPage() {
             </div>
             <h2>Создать аккаунт</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: 8 }}>
-              Присоединяйтесь к AutoMarket
+              Присоединяйтесь к «Мастер Рядом»
             </p>
           </div>
 

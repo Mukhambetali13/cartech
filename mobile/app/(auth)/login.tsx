@@ -76,7 +76,7 @@ export default function LoginScreen() {
           <Link href="/(auth)/register" style={styles.link}>{t('auth.signUp')}</Link>
         </View>
       </AuthCard>
-      <Text style={styles.brandCaption}>🚗 AutoMarket</Text>
+      <Text style={styles.brandCaption}>🔧 Мастер Рядом</Text>
     </KeyboardAvoidingView>
   );
 }

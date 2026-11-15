@@ -57,6 +57,7 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={styles.authScroll} keyboardShouldPersistTaps="handled">
         <LanguageSwitch style={{ alignSelf: 'center', marginBottom: 14 }} />
         <AuthCard title={t('auth.createAccount')} subtitle={t('auth.registerSubtitle')}>
+          <Text style={styles.fieldLabel}>{t('auth.whoAreYou')}</Text>
           <View style={styles.roleRow}>
             {(['client', 'master'] as const).map((item) => (
               <Pressable
@@ -130,7 +131,7 @@ export default function RegisterScreen() {
           </View>
         </AuthCard>
       </ScrollView>
-      <Text style={styles.brandCaption}>🚗 AutoMarket</Text>
+      <Text style={styles.brandCaption}>🔧 Мастер Рядом</Text>
     </KeyboardAvoidingView>
   );
 }

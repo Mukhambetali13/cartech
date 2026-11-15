@@ -38,7 +38,9 @@ export function AuthCard({ title, subtitle, children }: {
 }) {
   return (
     <View style={styles.authCard}>
-      <Text style={styles.logo}>🚗</Text>
+      <View style={styles.logo}>
+        <Text style={styles.logoText}>🔧</Text>
+      </View>
       <Text style={styles.authTitle}>{title}</Text>
       <Text style={styles.authSubtitle}>{subtitle}</Text>
       <View style={styles.authForm}>{children}</View>
@@ -103,14 +105,67 @@ export function BackButton({ onPress }: { onPress: () => void }) {
   const t = useT();
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={{ marginBottom: 14, alignSelf: 'flex-start' }}>
-      <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>{t('common.back')}</Text>
+      <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 17 }}>{t('common.back')}</Text>
+    </Pressable>
+  );
+}
+
+/** Заголовок шага формы с крупным номером: «1 Что случилось?» */
+export function StepTitle({ step, title }: { step: number; title: string }) {
+  return (
+    <View style={styles.stepRow}>
+      <View style={styles.stepNumber}>
+        <Text style={styles.stepNumberText}>{step}</Text>
+      </View>
+      <Text style={styles.stepTitle}>{title}</Text>
+    </View>
+  );
+}
+
+/** Большая цветная кнопка-карточка для главного действия экрана. */
+export function BigAction({ icon, title, text, color, onPress }: {
+  icon: string;
+  title: string;
+  text: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [styles.bigAction, { backgroundColor: color, opacity: pressed ? 0.85 : 1 }]}
+    >
+      <View style={styles.bigActionIcon}>
+        <Text style={styles.bigActionEmoji}>{icon}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.bigActionTitle}>{title}</Text>
+        <Text style={styles.bigActionText}>{text}</Text>
+      </View>
+      <Text style={styles.bigActionArrow}>›</Text>
+    </Pressable>
+  );
+}
+
+/** Плитка «иконка + подпись» для второстепенных разделов. */
+export function Tile({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, pressed && { backgroundColor: colors.accentBackground }]}
+    >
+      <Text style={styles.tileEmoji}>{icon}</Text>
+      <Text style={styles.tileLabel}>{label}</Text>
     </Pressable>
   );
 }
 
 export const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
-  pageContent: { padding: 20, paddingTop: 24, paddingBottom: 28 },
+  pageContent: { padding: 20, paddingTop: 20, paddingBottom: 32 },
   keyboardPage: { flex: 1, backgroundColor: colors.background, justifyContent: 'center', padding: 20 },
   authScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 20 },
   authCard: {
@@ -125,45 +180,56 @@ export const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 2,
   },
-  logo: { fontSize: 34, textAlign: 'center', marginBottom: 12 },
-  authTitle: { color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  authSubtitle: { color: colors.secondaryText, fontSize: 14, textAlign: 'center', marginTop: 7 },
+  logo: {
+    width: 68,
+    height: 68,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  logoText: { fontSize: 34 },
+  authTitle: { color: colors.text, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+  authSubtitle: { color: colors.secondaryText, fontSize: 16, textAlign: 'center', marginTop: 7, lineHeight: 22 },
   authForm: { marginTop: 24 },
   field: { marginBottom: 16 },
-  fieldLabel: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 7 },
+  fieldLabel: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
   input: {
-    minHeight: 48,
-    borderWidth: 1,
+    minHeight: 54,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 13,
+    borderRadius: 14,
+    paddingHorizontal: 15,
     color: colors.text,
     backgroundColor: colors.surface,
-    fontSize: 15,
+    fontSize: 17,
   },
   primaryButton: {
-    minHeight: 48,
-    borderRadius: 12,
+    minHeight: 56,
+    borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginTop: 6,
+    paddingHorizontal: 18,
+    marginTop: 8,
   },
-  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  disabledButton: { opacity: 0.55 },
+  primaryButtonText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  disabledButton: { opacity: 0.45 },
   error: {
     color: colors.error,
     backgroundColor: colors.errorBackground,
-    borderRadius: 10,
-    padding: 11,
+    borderRadius: 12,
+    padding: 13,
     marginBottom: 12,
-    fontSize: 13,
+    fontSize: 15,
+    lineHeight: 21,
   },
   authFooter: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' },
-  mutedText: { color: colors.secondaryText, fontSize: 14, lineHeight: 21 },
-  link: { color: colors.primaryDark, fontSize: 14, fontWeight: '700' },
-  brandCaption: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: 18 },
+  mutedText: { color: colors.secondaryText, fontSize: 15, lineHeight: 22 },
+  link: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  brandCaption: { textAlign: 'center', color: colors.muted, fontSize: 14, fontWeight: '600', marginTop: 18 },
   roleRow: {
     flexDirection: 'row',
     backgroundColor: colors.background,
@@ -171,103 +237,141 @@ export const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 18,
   },
-  roleButton: { flex: 1, minHeight: 42, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  roleButtonActive: { backgroundColor: colors.surface, elevation: 1 },
-  roleText: { color: colors.secondaryText, fontSize: 12, fontWeight: '600' },
-  roleTextActive: { color: colors.primaryDark },
-  eyebrow: { color: colors.primaryDark, fontSize: 11, fontWeight: '800', letterSpacing: 1.4, marginBottom: 7 },
-  pageTitle: { color: colors.text, fontSize: 27, fontWeight: '800', marginBottom: 5 },
-  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: '700', marginTop: 24, marginBottom: 12 },
+  roleButton: { flex: 1, minHeight: 50, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  roleButtonActive: { backgroundColor: colors.surface, elevation: 2 },
+  roleText: { color: colors.secondaryText, fontSize: 15, fontWeight: '700' },
+  roleTextActive: { color: colors.primary },
+  pageTitle: { color: colors.text, fontSize: 28, fontWeight: '800', marginBottom: 6 },
+  sectionTitle: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 26, marginBottom: 12 },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 28, marginBottom: 12 },
+  stepNumber: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  stepTitle: { flex: 1, color: colors.text, fontSize: 20, fontWeight: '800' },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 17,
+    borderRadius: 18,
     padding: 16,
   },
-  homeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  logoutButton: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  logoutText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
-  heroCard: { marginTop: 22, padding: 20, backgroundColor: colors.accentBackground, borderColor: '#f8d7c7' },
-  heroIcon: { fontSize: 28, marginBottom: 10 },
-  heroTitle: { color: colors.text, fontSize: 21, fontWeight: '800' },
-  heroDescription: { color: colors.secondaryText, fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 14 },
-  sosButton: {
-    minHeight: 52,
-    borderRadius: 13,
-    backgroundColor: '#d92d20',
+  homeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginTop: 8,
   },
-  sosButtonText: { color: '#fff', fontSize: 15, fontWeight: '800' },
-  sosServiceCard: { padding: 14 },
+  iconButtonText: { fontSize: 22 },
+  bigAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 22,
+    padding: 18,
+    minHeight: 112,
+    gap: 14,
+  },
+  bigActionIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bigActionEmoji: { fontSize: 30 },
+  bigActionTitle: { color: '#fff', fontSize: 21, fontWeight: '800' },
+  bigActionText: { color: 'rgba(255,255,255,0.92)', fontSize: 15, lineHeight: 21, marginTop: 4 },
+  bigActionArrow: { color: '#fff', fontSize: 28, fontWeight: '700' },
+  tileRow: { flexDirection: 'row', gap: 12 },
+  tile: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    padding: 16,
+    minHeight: 116,
+    justifyContent: 'space-between',
+  },
+  tileEmoji: { fontSize: 32 },
+  tileLabel: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 10 },
+  sosButton: {
+    minHeight: 60,
+    borderRadius: 16,
+    backgroundColor: colors.sos,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    marginTop: 20,
+  },
+  sosButtonText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  sosServiceCard: { padding: 16, borderWidth: 2 },
   sosServiceCardSelected: { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.accentBackground },
   radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioSelected: { borderColor: colors.primary },
-  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.primary },
-  shortcutGrid: { gap: 10 },
-  shortcutCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    padding: 15,
-  },
-  shortcutIcon: { fontSize: 22, marginRight: 12 },
-  shortcutLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
-  shortcutArrow: { color: colors.primary, fontSize: 20, fontWeight: '700' },
-  listCard: { marginBottom: 11 },
+  radioDot: { width: 13, height: 13, borderRadius: 7, backgroundColor: colors.primary },
+  listCard: { marginBottom: 12 },
   rowBetween: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 9 },
-  cardTitle: { color: colors.text, fontSize: 16, lineHeight: 22, fontWeight: '700', flex: 1 },
+  cardTitle: { color: colors.text, fontSize: 17, lineHeight: 23, fontWeight: '800', flex: 1 },
   badge: {
     overflow: 'hidden',
     color: colors.primaryDark,
     backgroundColor: colors.accentBackground,
     borderRadius: 20,
-    paddingHorizontal: 9,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
-  cardDescription: { color: colors.secondaryText, fontSize: 13, lineHeight: 19, marginTop: 7 },
-  price: { color: colors.primaryDark, fontSize: 15, fontWeight: '800', marginTop: 11 },
+  cardDescription: { color: colors.secondaryText, fontSize: 15, lineHeight: 21, marginTop: 7 },
+  price: { color: colors.text, fontSize: 18, fontWeight: '800', marginTop: 12 },
   emptyList: { flexGrow: 1 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 22, minHeight: 220 },
-  emptyIcon: { fontSize: 34, marginBottom: 10 },
-  emptyText: { color: colors.secondaryText, textAlign: 'center', fontSize: 14, lineHeight: 21 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyText: { color: colors.secondaryText, textAlign: 'center', fontSize: 16, lineHeight: 23 },
   secondaryButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    minHeight: 52,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     marginTop: 14,
+    justifyContent: 'center',
   },
-  secondaryButtonText: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
+  secondaryButtonText: { color: colors.primary, fontWeight: '800', fontSize: 16 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: 20,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  chipSelected: { borderColor: colors.primary, backgroundColor: colors.accentBackground },
-  chipText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: colors.primaryDark },
-  textArea: { minHeight: 80, textAlignVertical: 'top', paddingTop: 12 },
+  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  chipText: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  chipTextSelected: { color: '#fff' },
+  textArea: { minHeight: 96, textAlignVertical: 'top', paddingTop: 14 },
   rowGap: { flexDirection: 'row', gap: 10 },
 });

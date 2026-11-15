@@ -81,9 +81,9 @@ export default function App() {
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
             <span>🚗</span>
-            <strong style={{ color: 'var(--text-secondary)' }}>AutoMarket</strong>
+            <strong style={{ color: 'var(--text-secondary)' }}>Мастер Рядом</strong>
           </div>
-          <p>© 2024 AutoMarket — Маркетплейс автоуслуг</p>
+          <p>© 2024 Мастер Рядом — помощь с машиной</p>
         </div>
       </footer>
     </BrowserRouter>

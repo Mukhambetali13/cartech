@@ -6,7 +6,7 @@ import type { ServiceCategory } from '@shared/types/index';
 import { MAX_OFFER_MARKUP } from '../src/pricing';
 import { apiErrorMessage, ordersApi, servicesApi } from '../src/api';
 import { useAuthStore } from '../src/store/authStore';
-import { BackButton, EmptyState, Field, SectionCard, styles } from '../src/components/ui';
+import { BackButton, EmptyState, Field, SectionCard, StepTitle, styles } from '../src/components/ui';
 import { VehiclePicker } from '../src/components/VehiclePicker';
 import { parseDate } from '../src/maintenance';
 import { localized, NUMBER_LOCALE, useLanguage, useT } from '../src/i18n';
@@ -121,13 +121,12 @@ export default function PlannedRequestScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.eyebrow}>{t('planned.eyebrow')}</Text>
         <Text style={styles.pageTitle}>{t('planned.title')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 8 }]}>
           {t('planned.intro')}
         </Text>
 
-        <Text style={styles.sectionTitle}>{t('planned.whatToDo')}</Text>
+        <StepTitle step={1} title={t('planned.whatToDo')} />
         {loading ? (
           <ActivityIndicator style={{ marginVertical: 28 }} color={colors.primary} />
         ) : loadError ? (
@@ -168,10 +167,10 @@ export default function PlannedRequestScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>{t('common.vehicle')}</Text>
+        <StepTitle step={2} title={t('planned.vehicleQuestion')} />
         <VehiclePicker value={vehicleId} onChange={setVehicleId} required />
 
-        <Text style={styles.sectionTitle}>{t('planned.details')}</Text>
+        <StepTitle step={3} title={t('planned.details')} />
         <Field label={t('price.yourRequired')}>
           <TextInput
             style={styles.input}
@@ -180,7 +179,7 @@ export default function PlannedRequestScreen() {
             placeholder={t('planned.pricePlaceholder')}
             keyboardType="numeric"
           />
-          <Text style={[styles.mutedText, { fontSize: 12, marginTop: 7 }]}>
+          <Text style={[styles.mutedText, { fontSize: 14, marginTop: 7 }]}>
             {t('price.plannedHint', { max: MAX_OFFER_MARKUP.toLocaleString(NUMBER_LOCALE) })}
           </Text>
         </Field>

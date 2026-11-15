@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import type { Vehicle } from '@shared/types/index';
 import { serviceBookApi, vehiclesApi } from '../../src/api';
 import { useAuthStore } from '../../src/store/authStore';
-import { Page, SectionCard, styles } from '../../src/components/ui';
+import { BigAction, Page, SectionCard, Tile, styles } from '../../src/components/ui';
 import { reminderColors, upcomingText, upcomingWorks, type UpcomingWork } from '../../src/maintenance';
 import { useT } from '../../src/i18n';
 import { colors } from '../../src/theme';
@@ -42,19 +42,23 @@ export default function HomeScreen() {
     <Page>
       <View style={styles.homeHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.eyebrow}>AUTOMARKET</Text>
           <Text style={styles.pageTitle}>{t('home.greeting', { name: user?.full_name || t('home.driver') })}</Text>
           <Text style={styles.mutedText}>
-            {user?.role === 'master' ? t('home.masterCabinet') : t('home.clientSubtitle')}
+            {isClient ? t('home.clientSubtitle') : t('home.masterCabinet')}
           </Text>
         </View>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/settings')} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>{t('home.settings')}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('home.settings')}
+          onPress={() => router.push('/settings')}
+          style={styles.iconButton}
+        >
+          <Text style={styles.iconButtonText}>⚙️</Text>
         </Pressable>
       </View>
 
       {dueWorks.length > 0 ? (
-        <View style={{ marginTop: 18, gap: 9 }}>
+        <View style={{ marginTop: 18, gap: 10 }}>
           {dueWorks.map((item) => (
             <Pressable
               key={item.entry.id}
@@ -80,53 +84,48 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      <SectionCard style={styles.heroCard}>
-        <Text style={styles.heroIcon}>🛠️</Text>
-        <Text style={styles.heroTitle}>{t('home.heroTitle')}</Text>
-        <Text style={styles.heroDescription}>{t('home.heroDescription')}</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.sosButton}
-          onPress={() => router.push('/sos')}
-        >
-          <Text style={styles.sosButtonText}>{t('home.sos')}</Text>
-        </Pressable>
-        {isClient ? (
-          <Pressable
-            accessibilityRole="button"
-            style={[styles.primaryButton, { marginTop: 10 }]}
+      {isClient ? (
+        <View style={{ marginTop: 22, gap: 14 }}>
+          <BigAction
+            icon="🆘"
+            title={t('home.sosTitle')}
+            text={t('home.sosText')}
+            color={colors.sos}
+            onPress={() => router.push('/sos')}
+          />
+          <BigAction
+            icon="🔧"
+            title={t('home.plannedTitle')}
+            text={t('home.plannedText')}
+            color={colors.primary}
             onPress={() => router.push('/planned')}
-          >
-            <Text style={styles.primaryButtonText}>{t('home.planned')}</Text>
-          </Pressable>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.secondaryButton, { marginTop: 10, alignItems: 'center' }]}
-          onPress={() => router.push('/(tabs)/services')}
-        >
-          <Text style={styles.secondaryButtonText}>{t('home.allServices')}</Text>
-        </Pressable>
-      </SectionCard>
+          />
+        </View>
+      ) : (
+        <View style={{ marginTop: 22 }}>
+          <BigAction
+            icon="📋"
+            title={t('home.masterOrdersTitle')}
+            text={t('home.masterOrdersText')}
+            color={colors.primary}
+            onPress={() => router.push('/(tabs)/orders')}
+          />
+        </View>
+      )}
 
-      <Text style={styles.sectionTitle}>{t('home.quickAccess')}</Text>
-      <View style={styles.shortcutGrid}>
-        <Shortcut label={t('home.myVehicles')} icon="🚙" onPress={() => router.push('/(tabs)/vehicles')} />
-        <Shortcut label={t('home.myOrders')} icon="📋" onPress={() => router.push('/(tabs)/orders')} />
+      <View style={[styles.tileRow, { marginTop: 14 }]}>
+        {isClient ? (
+          <>
+            <Tile icon="🚗" label={t('home.myVehicles')} onPress={() => router.push('/(tabs)/vehicles')} />
+            <Tile icon="📋" label={t('home.myOrders')} onPress={() => router.push('/(tabs)/orders')} />
+          </>
+        ) : (
+          <>
+            <Tile icon="🛠️" label={t('tabs.services')} onPress={() => router.push('/(tabs)/services')} />
+            <Tile icon="⚙️" label={t('home.settings')} onPress={() => router.push('/settings')} />
+          </>
+        )}
       </View>
-      <Text style={[styles.mutedText, { marginTop: 24, color: colors.muted }]}>
-        {t('home.footer')}
-      </Text>
     </Page>
-  );
-}
-
-function Shortcut({ label, icon, onPress }: { label: string; icon: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.shortcutCard}>
-      <Text style={styles.shortcutIcon}>{icon}</Text>
-      <Text style={styles.shortcutLabel}>{label}</Text>
-      <Text style={styles.shortcutArrow}>→</Text>
-    </Pressable>
   );
 }

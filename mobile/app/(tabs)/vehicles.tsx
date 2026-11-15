@@ -63,7 +63,6 @@ export default function VehiclesScreen() {
   return (
     <Page scroll={false}>
       <View style={styles.pageContent}>
-        <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
         <Text style={styles.pageTitle}>{t('home.myVehicles')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 14 }]}>{t('vehicles.subtitle')}</Text>
         {!loading && !error ? addButton : null}

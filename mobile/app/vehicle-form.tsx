@@ -145,7 +145,6 @@ export default function VehicleFormScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
         <Text style={styles.pageTitle}>{isEdit ? t('vehicleForm.editTitle') : t('vehicleForm.newTitle')}</Text>
         <Text style={[styles.mutedText, { marginBottom: 8 }]}>
           {t('vehicleForm.intro')}

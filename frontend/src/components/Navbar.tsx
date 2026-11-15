@@ -16,7 +16,7 @@ export default function Navbar() {
         <div className="navbar-inner">
           <Link to="/" className="navbar-logo">
             <div className="logo-icon">🚗</div>
-            <span>AutoMarket</span>
+            <span>Мастер Рядом</span>
           </Link>
 
           <ul className="navbar-links">

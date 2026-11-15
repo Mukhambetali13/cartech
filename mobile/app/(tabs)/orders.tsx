@@ -12,11 +12,11 @@ import { colors } from '../../src/theme';
 
 function statusColor(status: Order['status']) {
   const map: Record<string, string> = {
-    open: '#10b981',
-    accepted: '#6366f1',
-    in_progress: '#f59e0b',
-    completed: '#6b7280',
-    cancelled: '#ef4444',
+    open: '#047857',
+    accepted: '#1557b0',
+    in_progress: '#b45309',
+    completed: '#4b5563',
+    cancelled: '#b91c1c',
   };
   return map[status] ?? colors.primaryDark;
 }
@@ -77,7 +77,6 @@ export default function OrdersScreen() {
   return (
     <Page scroll={false}>
       <View style={styles.pageContent}>
-        <Text style={styles.eyebrow}>AUTOMARKET</Text>
         <Text style={styles.pageTitle}>
           {isMaster ? t('orders.titleMaster') : t('orders.titleClient')}
         </Text>
@@ -106,6 +105,8 @@ export default function OrdersScreen() {
           ListEmptyComponent={
             <EmptyState
               message={isMaster ? t('orders.emptyMaster') : t('orders.emptyClient')}
+              actionLabel={isMaster ? undefined : t('orders.emptyAction')}
+              onAction={isMaster ? undefined : () => router.push('/(tabs)')}
             />
           }
           renderItem={({ item }) => (
@@ -139,7 +140,7 @@ export default function OrdersScreen() {
                 ) : null}
 
                 {item.scheduled_at ? (
-                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 12 }]}>
+                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 14 }]}>
                     {t('order.preferredDate', { date: formatDate(item.scheduled_at) })}
                   </Text>
                 ) : null}
@@ -151,13 +152,13 @@ export default function OrdersScreen() {
                 ) : null}
 
                 {item.address ? (
-                  <Text style={[styles.mutedText, { marginTop: 5, fontSize: 12 }]} numberOfLines={1}>
+                  <Text style={[styles.mutedText, { marginTop: 5, fontSize: 14 }]} numberOfLines={1}>
                     📍 {item.address}
                   </Text>
                 ) : null}
 
                 {item.distance_km != null ? (
-                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 12, fontWeight: '700', color: colors.primaryDark }]}>
+                  <Text style={[styles.mutedText, { marginTop: 4, fontSize: 14, fontWeight: '700', color: colors.primaryDark }]}>
                     {t('order.distance', { km: item.distance_km.toLocaleString(NUMBER_LOCALE, { maximumFractionDigits: 1 }) })}
                   </Text>
                 ) : null}
@@ -168,7 +169,7 @@ export default function OrdersScreen() {
                   ) : item.client_price != null ? (
                     <Text style={[styles.price, { marginTop: 0 }]}>
                       {Number(item.client_price).toLocaleString(NUMBER_LOCALE)} ₸
-                      <Text style={{ fontWeight: '500', fontSize: 12, color: colors.muted }}>
+                      <Text style={{ fontWeight: '500', fontSize: 14, color: colors.muted }}>
                         {isMaster ? t('order.clientPrice') : t('order.yourPrice')}
                       </Text>
                     </Text>
@@ -178,15 +179,15 @@ export default function OrdersScreen() {
 
                   {/* CTA hint */}
                   {isMaster && item.status === 'open' && (
-                    <View style={{ backgroundColor: colors.accentBackground, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                      <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: 12 }}>
+                    <View style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}>
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
                         {t('orders.ctaOffer')}
                       </Text>
                     </View>
                   )}
                   {user?.role === 'client' && item.status === 'open' && (
-                    <View style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                      <Text style={{ color: '#10b981', fontWeight: '700', fontSize: 12 }}>
+                    <View style={{ backgroundColor: colors.successBackground, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}>
+                      <Text style={{ color: colors.success, fontWeight: '800', fontSize: 14 }}>
                         {t('orders.ctaOffers')}
                       </Text>
                     </View>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AutoMarket",
+    "name": "Мастер Рядом",
     "slug": "automarket",
     "scheme": "automarket",
     "version": "1.0.0",
@@ -25,13 +25,13 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#e35d3f"
+          "color": "#1d6fe0"
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "AutoMarket uses your location to fill in the address of a request and to show how far away orders are."
+          "locationWhenInUsePermission": "Мастер Рядом uses your location to fill in the address of a request and to show how far away orders are."
         }
       ]
     ],
@@ -46,7 +46,7 @@
       "package": "com.automarket.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#e35d3f"
+        "backgroundColor": "#1d6fe0"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",

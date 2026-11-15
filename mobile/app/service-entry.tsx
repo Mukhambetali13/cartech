@@ -110,7 +110,6 @@ export default function ServiceEntryScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <BackButton onPress={() => router.back()} />
-        <Text style={styles.eyebrow}>{t('entry.eyebrow')}</Text>
         <Text style={styles.pageTitle}>{t('entry.title')}</Text>
         {vehicle ? (
           <Text style={styles.mutedText}>
@@ -212,7 +211,7 @@ export default function ServiceEntryScreen() {
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{t('entry.save')}</Text>}
         </Pressable>
-        <Text style={[styles.mutedText, { fontSize: 12, marginTop: 10, color: colors.muted }]}>
+        <Text style={[styles.mutedText, { fontSize: 14, marginTop: 10, color: colors.muted }]}>
           {t('entry.mileageUpdateHint')}
         </Text>
       </ScrollView>

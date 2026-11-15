@@ -128,7 +128,6 @@ export default function VehicleDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} tintColor={colors.primary} />}
     >
       <BackButton onPress={() => router.back()} />
-      <Text style={styles.eyebrow}>{t('vehicles.eyebrow')}</Text>
       <Text style={styles.pageTitle}>
         {vehicle.make} {vehicle.model}
       </Text>
@@ -182,7 +181,7 @@ export default function VehicleDetailScreen() {
                 {item.status === 'overdue' ? t('vehicle.dueNow') : item.status === 'soon' ? t('home.dueSoon') : ''}
                 {upcomingText(item)}
               </Text>
-              <Text style={[styles.mutedText, { fontSize: 12, marginTop: 4 }]}>
+              <Text style={[styles.mutedText, { fontSize: 14, marginTop: 4 }]}>
                 {t('vehicle.nextReplacement')}
                 {[
                   item.entry.next_service_mileage != null ? t('vehicle.atKm', { km: formatKm(item.entry.next_service_mileage) }) : '',
@@ -242,7 +241,7 @@ export default function VehicleDetailScreen() {
                   <Text style={[styles.price, { marginTop: 6 }]}>{Number(entry.cost).toLocaleString(NUMBER_LOCALE)} ₸</Text>
                 ) : null}
                 {entry.next_service_mileage != null || entry.next_service_date ? (
-                  <Text style={[styles.mutedText, { fontSize: 12, marginTop: 6 }]}>
+                  <Text style={[styles.mutedText, { fontSize: 14, marginTop: 6 }]}>
                     {t('vehicle.next')}
                     {[
                       entry.next_service_mileage != null ? formatKm(entry.next_service_mileage) : '',
@@ -258,7 +257,7 @@ export default function VehicleDetailScreen() {
         })
       )}
       {entries.length > 0 ? (
-        <Text style={[styles.mutedText, { fontSize: 12, textAlign: 'center' }]}>
+        <Text style={[styles.mutedText, { fontSize: 14, textAlign: 'center' }]}>
           {t('vehicle.longPressHint')}
         </Text>
       ) : null}

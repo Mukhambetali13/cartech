@@ -31,7 +31,7 @@ function Stars({ value }: { value?: number | null }) {
   if (!value) return null;
   const filled = Math.round(Number(value));
   return (
-    <Text style={{ color: '#f59e0b', fontSize: 13, marginTop: 2 }}>
+    <Text style={{ color: '#b45309', fontSize: 13, marginTop: 2 }}>
       {'★'.repeat(filled)}{'☆'.repeat(5 - filled)}
       {'  '}{Number(value).toFixed(1)}
     </Text>
@@ -228,7 +228,7 @@ export default function OrderDetailScreen() {
               {t(isClient ? 'detail.yourPrice' : 'detail.clientPrice', { price: money(clientPrice) })}
             </Text>
           ) : null}
-          <Text style={[ui.mutedText, { marginTop: 8, fontSize: 12 }]}>
+          <Text style={[ui.mutedText, { marginTop: 8, fontSize: 14 }]}>
             {new Date(order.created_at).toLocaleString(NUMBER_LOCALE)}
           </Text>
         </SectionCard>
@@ -389,7 +389,7 @@ export default function OrderDetailScreen() {
 
         {/* ── Client: accepted offer pinned ── */}
         {isClient && acceptedOffer && (
-          <SectionCard style={[{ marginBottom: 16, borderColor: '#10b981', borderWidth: 2 }]}>
+          <SectionCard style={[{ marginBottom: 16, borderColor: '#047857', borderWidth: 2 }]}>
             <Text style={s.sectionHead}>{t('offer.chosenMaster')}</Text>
             <View style={ui.rowBetween}>
               <View style={{ flex: 1 }}>
@@ -444,14 +444,14 @@ export default function OrderDetailScreen() {
                     ) : null}
                     <Stars value={offer.master_rating} />
                     {offer.master_review_count != null && offer.master_review_count > 0 && (
-                      <Text style={[ui.mutedText, { fontSize: 12 }]}>
+                      <Text style={[ui.mutedText, { fontSize: 14 }]}>
                         {t('offer.reviews', { count: offer.master_review_count })}
                       </Text>
                     )}
                     {offer.comment ? (
                       <Text style={[ui.cardDescription, { marginTop: 6 }]}>💬 {offer.comment}</Text>
                     ) : null}
-                    <Text style={[ui.mutedText, { fontSize: 12, marginTop: 6 }]}>
+                    <Text style={[ui.mutedText, { fontSize: 14, marginTop: 6 }]}>
                       {new Date(offer.created_at).toLocaleString(NUMBER_LOCALE)}
                     </Text>
                   </View>
@@ -460,7 +460,7 @@ export default function OrderDetailScreen() {
                       {money(Number(offer.price))}
                     </Text>
                     {clientPrice != null && (
-                      <Text style={[ui.mutedText, { fontSize: 12, marginTop: 2 }]}>
+                      <Text style={[ui.mutedText, { fontSize: 14, marginTop: 2 }]}>
                         {Number(offer.price) > clientPrice
                           ? t('offer.aboveYours', { diff: money(Number(offer.price) - clientPrice) })
                           : t('offer.atYours')}
@@ -503,20 +503,20 @@ export default function OrderDetailScreen() {
 
 function statusBadgeStyle(status: string) {
   const map: Record<string, object> = {
-    open: { backgroundColor: 'rgba(16,185,129,0.12)', color: '#10b981' },
-    accepted: { backgroundColor: 'rgba(99,102,241,0.12)', color: '#6366f1' },
-    in_progress: { backgroundColor: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
-    completed: { backgroundColor: 'rgba(107,114,128,0.12)', color: '#6b7280' },
-    cancelled: { backgroundColor: 'rgba(239,68,68,0.12)', color: '#ef4444' },
+    open: { backgroundColor: 'rgba(16,185,129,0.12)', color: '#047857' },
+    accepted: { backgroundColor: 'rgba(99,102,241,0.12)', color: '#1557b0' },
+    in_progress: { backgroundColor: 'rgba(245,158,11,0.12)', color: '#b45309' },
+    completed: { backgroundColor: 'rgba(107,114,128,0.12)', color: '#4b5563' },
+    cancelled: { backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c' },
   };
   return map[status] ?? {};
 }
 
 function offerBadgeStyle(status: string) {
   const map: Record<string, object> = {
-    pending: { backgroundColor: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
-    accepted: { backgroundColor: 'rgba(16,185,129,0.12)', color: '#10b981' },
-    declined: { backgroundColor: 'rgba(239,68,68,0.12)', color: '#ef4444' },
+    pending: { backgroundColor: 'rgba(245,158,11,0.12)', color: '#b45309' },
+    accepted: { backgroundColor: 'rgba(16,185,129,0.12)', color: '#047857' },
+    declined: { backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c' },
   };
   return map[status] ?? {};
 }
@@ -534,7 +534,7 @@ const s = StyleSheet.create({
   },
   currentOfferLabel: { color: colors.secondaryText, fontSize: 13 },
   successText: {
-    color: '#10b981',
+    color: '#047857',
     backgroundColor: 'rgba(16,185,129,0.08)',
     borderRadius: 10,
     padding: 11,
@@ -550,7 +550,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButtonText: { color: '#ef4444', fontWeight: '700', fontSize: 15 },
+  cancelButtonText: { color: '#b91c1c', fontWeight: '700', fontSize: 15 },
   acceptButton: {
     minHeight: 44,
     borderRadius: 12,
@@ -568,7 +568,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  declineButtonText: { color: '#ef4444', fontWeight: '700', fontSize: 14 },
+  declineButtonText: { color: '#b91c1c', fontWeight: '700', fontSize: 14 },
   countBadge: {
     backgroundColor: colors.primary,
     borderRadius: 14,

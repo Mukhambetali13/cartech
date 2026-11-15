@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '../src/store/authStore';
 import { loadLanguage, useLanguage } from '../src/i18n';
 import { orderIdFrom, registerForPush } from '../src/notifications';
+import { colors } from '../src/theme';
 
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
@@ -38,7 +39,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#f6f7f9' } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="sos" options={{ presentation: 'modal' }} />
         <Stack.Screen name="order-detail" />
